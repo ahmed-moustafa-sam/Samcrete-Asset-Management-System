@@ -1,0 +1,53 @@
+[
+  {
+    "id": 1,
+    "Location": "Ground Floor",
+    "Location Description": "None",
+    "Employee Number": 1997,
+    "Full Name": "مينا سعيد صموئيل عزيز",
+    "Asset Number": 32005,
+    "Asset Key": "2060/02-113",
+    "Asset Type": "LAP TOP",
+    "Asset Description": "LAP TOP Lenovo I5 4.2/3 G.H.Z RAM 16 GB SSD 500 GB SN : CB29562090",
+    "S/N": "CB29562090",
+    "Status": "Good",
+    "Comments": "",
+    "QR Code": "تم",
+    "Check status": "Checked",
+    "تعليق المخازن": ""
+  },
+  {
+    "id": 2,
+    "Location": "Ground Floor",
+    "Location Description": "ادارة المالية",
+    "Employee Number": 1075,
+    "Full Name": "جورج صبحى نخلة ميخائيل",
+    "Asset Number": 103511,
+    "Asset Key": "2060/06-515",
+    "Asset Type": "Printer",
+    "Asset Description": "HP LaserJet 137 SN : CNB2M7RG29",
+    "S/N": "CNB2M7RG29",
+    "Status": "Good",
+    "Comments": "",
+    "QR Code": "تم",
+    "Check status": "Checked",
+    "تعليق المخازن": ""
+  },
+  {
+    "id": 3,
+    "Location": "Ground Floor",
+    "Location Description": "ادارة المالية",
+    "Employee Number": 1286,
+    "Full Name": "مجدى ميشيل جرجس صليب",
+    "Asset Number": 75232,
+    "Asset Key": "2060/02-296",
+    "Asset Type": "LAP TOP",
+    "Asset Description": "LAP TOP HP I7 8565U RAM 8 GB SSD 256 GB SSD SN : 5CD910129D",
+    "S/N": "5CD910129D",
+    "Status": "Good",
+    "Comments": "",
+    "QR Code": "تم",
+    "Check status": "Checked",
+    "تعليق المخازن": ""
+  }
+]
