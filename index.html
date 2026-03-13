@@ -2664,8 +2664,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        function loadFromLsafeLocalStorageGet
-            const saved = localStorage.getItem('assetsData');
+        function loadFromLocalStorage() {
+            const saved = safeLocalStorageGet('assetsData');
             if (saved) {
                 try {
                     assetsData = JSON.parse(saved);
