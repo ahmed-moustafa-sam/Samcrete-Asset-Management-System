@@ -88,25 +88,28 @@
                 alert('يرجى إدخال محتوى CSV');
                 return;
             }
-            
+
             const lines = csvText.split('\n').filter(line => line.trim());
             if (lines.length < 2) {
                 alert('CSV غير صالح - يجب أن يحتوي على رأس وصف واحد على الأقل');
                 return;
             }
-            
+
+            // اكتشاف الفاصل (delimiter): الفاصلة أو الفاصلة المنقوطة أو التاب
+            const delimiter = detectDelimiter(lines[0]);
+
             // تحليل الرأس مع معالجة أفضل للأعمدة
-            const headers = parseCSVLine(lines[0]);
-            console.log('Headers found:', headers.length, headers);
-            
+            const headers = parseCSVLine(lines[0], delimiter).map(h => h.trim());
+            console.log('Headers found:', headers.length, headers, 'delimiter:', delimiter);
+
             const data = [];
             for (let i = 1; i < lines.length; i++) {
                 const line = lines[i].trim();
                 if (!line) continue;
-                
-                const values = parseCSVLine(line);
+
+                const values = parseCSVLine(line, delimiter);
                 console.log(`Line ${i}:`, values.length, 'values');
-                
+
                 // التأكد من أن عدد القيم يطابق عدد الرؤوس
                 while (values.length < headers.length) {
                     values.push('');
@@ -116,7 +119,7 @@
                     const extra = values.splice(headers.length - 1);
                     values[headers.length - 1] = values[headers.length - 1] + ' ' + extra.join(' ');
                 }
-                
+
                 const obj = {};
                 headers.forEach((h, index) => {
                     // تحويل id إلى رقم
@@ -128,21 +131,38 @@
                 });
                 data.push(obj);
             }
-            
+
             console.log('Converted data:', data.length, 'records');
             document.getElementById('jsonOutput').value = JSON.stringify(data, null, 2);
         }
-        
+
+        // دالة للكشف عن الفاصل الأكثر احتمالاً في السطر
+        function detectDelimiter(line) {
+            const counts = {
+                ',': (line.match(/,/g) || []).length,
+                ';': (line.match(/;/g) || []).length,
+                '\t': (line.match(/\t/g) || []).length
+            };
+            // اختر الفاصل الأكثر تكراراً
+            const delimiter = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
+            return delimiter;
+        }
+
         // دالة محسنة لتحليل سطر CSV
-        function parseCSVLine(line) {
+        function parseCSVLine(line, delimiter = ',') {
             const result = [];
             let current = '';
             let inQuotes = false;
             let i = 0;
-            
+
+            // إزالة BOM إذا كان موجوداً في البداية
+            if (line.charCodeAt(0) === 0xFEFF) {
+                line = line.slice(1);
+            }
+
             while (i < line.length) {
                 const char = line[i];
-                
+
                 if (char === '"') {
                     if (inQuotes && line[i + 1] === '"') {
                         // علامة تنصيص مزدوجة داخل النص
@@ -153,8 +173,8 @@
                         inQuotes = !inQuotes;
                         i++;
                     }
-                } else if (char === ',' && !inQuotes) {
-                    // فاصلة خارج الاقتباسات
+                } else if (char === delimiter && !inQuotes) {
+                    // الفاصل خارج الاقتباسات
                     result.push(current.trim());
                     current = '';
                     i++;
@@ -163,10 +183,10 @@
                     i++;
                 }
             }
-            
+
             // إضافة القيمة الأخيرة
             result.push(current.trim());
-            
+
             return result;
         }
         
