@@ -1469,8 +1469,22 @@
         // ==================== تهيئة البيانات من الملف ====================
         async function initializeData() {
             try {
-                // محاولة تحميل البيانات من localStorage أولاً
-                let savedData = localStorage.getItem('assetsData');
+                // محاولة تحميل البيانات من الخادم (data.php) أولاً
+                let serverData = null;
+                try {
+                    serverData = await loadFromServer();
+                } catch (e) {
+                    console.warn('فشل تحميل البيانات من الخادم:', e);
+                }
+
+                // إذا تم تحميل بيانات من الخادم، فسنستخدمها
+                if (Array.isArray(serverData) && serverData.length > 0) {
+                    assetsData = serverData;
+                    console.log('تم تحميل البيانات من الخادم');
+                }
+
+                // محاولة تحميل البيانات من localStorage إذا لم تكن هناك بيانات من الخادم
+                let savedData = serverData && serverData.length ? null : localStorage.getItem('assetsData');
 
                 // إذا كانت البيانات محفوظة خطأً تحت dashboardFilters (بسبب نسخة أقدم من التطبيق)، نقوم بترحيلها
                 if (!savedData) {
@@ -1495,7 +1509,11 @@
                     }
                 }
 
-                if (savedData) {
+                const serverDataLoaded = Array.isArray(serverData) && serverData.length > 0;
+
+                if (serverDataLoaded) {
+                    // البيانات تم تحميلها بالفعل من الخادم أعلاه
+                } else if (savedData) {
                     try {
                         const parsedData = JSON.parse(savedData);
                         console.log('البيانات المحفوظة:', parsedData);
@@ -1524,23 +1542,11 @@
                         assetsData = [];
                     }
                 } else {
-                    // بيانات افتراضية إذا لم تكن هناك بيانات محفوظة
-                const groundData = [
-                    { Location: 'Ground Floor', 'Location Description': 'None', 'Employee Number': 1997, 'Full Name': 'مينا سعيد صموئيل عزيز', 'Asset Number': 32005, 'Asset Key': '2060/02-113', 'Asset Type': 'LAP TOP', 'Asset Description': 'LAP TOP Lenovo I5 4.2/3 G.H.Z RAM 16 GB SSD 500 GB SN : CB29562090', 'S/N': 'CB29562090', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                    { Location: 'Ground Floor', 'Location Description': 'ادارة المالية', 'Employee Number': 1075, 'Full Name': 'جورج صبحى نخلة ميخائيل', 'Asset Number': 103511, 'Asset Key': '2060/06-515', 'Asset Type': 'Printer', 'Asset Description': 'HP LaserJet 137 SN : CNB2M7RG29', 'S/N': 'CNB2M7RG29', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                    { Location: 'Ground Floor', 'Location Description': 'ادارة المالية', 'Employee Number': 1286, 'Full Name': 'مجدى ميشيل جرجس صليب', 'Asset Number': 75232, 'Asset Key': '2060/02-296', 'Asset Type': 'LAP TOP', 'Asset Description': 'LAP TOP HP I7 8565U RAM 8 GB SSD 256 GB SSD SN : 5CD910129D', 'S/N': '5CD910129D', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                    { Location: 'Ground Floor', 'Location Description': 'ادارة المالية', 'Employee Number': 369, 'Full Name': 'سامح سعد صليب يوسف', 'Asset Number': 78437, 'Asset Key': '2060/02-310', 'Asset Type': 'LAP TOP', 'Asset Description': 'LAP TOP Lenovo I5 8250 RAM 8 GB HD 1 TB DVD SN : R90SM66Z', 'S/N': 'R90SM66Z', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                    { Location: 'Ground Floor', 'Location Description': 'ادارة المالية', 'Employee Number': 86, 'Full Name': 'ايهاب مرقص ابراهيم مرقص', 'Asset Number': 85616, 'Asset Key': '2060/02-357', 'Asset Type': 'LAP TOP', 'Asset Description': 'LAP TOP Lenovo I5 8250 RAM 20 GB SSD 500 GB DVD SN : PF1M3MR0', 'S/N': 'PF1M3MR0', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                    { Location: 'Ground Floor', 'Location Description': 'ادارة المالية', 'Employee Number': 86, 'Full Name': 'ايهاب مرقص ابراهيم مرقص', 'Asset Number': 44368, 'Asset Key': '2060/06-431', 'Asset Type': 'Printer', 'Asset Description': 'HP LaserJet M103 SN : VNF3F10769', 'S/N': 'VNF3F10769', Status: 'Outdated', Comments: 'مشكلة في بكرة السحب', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                    { Location: 'Ground Floor', 'Location Description': 'قسم الحسابات', 'Employee Number': 1674, 'Full Name': 'ماركو صموئيل نادر عزيز', 'Asset Number': 84530, 'Asset Key': '2060/02-349', 'Asset Type': 'LAP TOP', 'Asset Description': 'LAP TOP Lenovo I5 8250 RAM 8 GB HD 2 TB DVD SN : PF1M3UEQ', 'S/N': 'PF1M3UEQ', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                    { Location: 'Ground Floor', 'Location Description': 'قسم الحسابات', 'Employee Number': 345, 'Full Name': 'مينا عادل عبد الملك جرجس', 'Asset Number': 103505, 'Asset Key': '2060/02-435', 'Asset Type': 'LAP TOP', 'Asset Description': 'LAP TOP Lenovo I5 8250 RAM 20 GB HD 500 GB SSD DVD SN : PF11LT9AT', 'S/N': 'PF11LT9AT', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                    { Location: 'Ground Floor', 'Location Description': 'قسم الحسابات', 'Employee Number': 4286, 'Full Name': 'فادى نبيل فهمى متى', 'Asset Number': 85618, 'Asset Key': '2060/02-358', 'Asset Type': 'LAP TOP', 'Asset Description': 'LAP TOP Lenovo I5 8250 RAM 20 GB SSD 500 GB DVD SN : PF1LCYXF', 'S/N': 'PF1LCYXF', Status: 'Outdated', Comments: 'مشكلة فى البطارية - بيسخن - كسر فى اطار الشاشة', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                    { Location: 'Ground Floor', 'Location Description': 'قسم الحسابات', 'Employee Number': 4286, 'Full Name': 'فادى نبيل فهمى متى', 'Asset Number': 30898, 'Asset Key': '2060/06-220', 'Asset Type': 'Printer', 'Asset Description': 'HP Laser Jet Pro M1530 SN : GNG891T68T', 'S/N': 'GNG891T68T', Status: 'Outdated', Comments: 'تالفه', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                    { Location: 'Ground Floor', 'Location Description': 'قسم الحسابات', 'Employee Number': 4290, 'Full Name': 'بيتر رؤوف عشم حنس', 'Asset Number': 84528, 'Asset Key': '2060/02-347', 'Asset Type': 'LAP TOP', 'Asset Description': 'LAP TOP Lenovo I5 8250 RAM 20 GB HD 500 GB DVD SN : PF1LCXGC', 'S/N': 'PF1LCXGC', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' }
-                ];
+                    // لا توجد بيانات محفوظة في الخادم أو localStorage، ابدأ بصفحة فارغة
+                    assetsData = [];
+                }
                 
-                // بيانات 1st Floor
-                const firstFloorData = [
+                // تحديد الأعمدة
                     { Location: 'First Floor', 'Location Description': 'قسم الدراسات', 'Employee Number': 2809, 'Full Name': 'Abanoub Fathy Shehata Geries', 'Asset Number': 15259, 'Asset Key': '2060/04-040', 'Asset Type': 'Screen', 'Asset Description': 'Dell LCD SN : 098182540010002', 'S/N': '98182540010002', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
                     { Location: 'First Floor', 'Location Description': 'الادارة العامة للانشاءات', 'Employee Number': 836, 'Full Name': 'Peter Rafaat Labib Ghabbour', 'Asset Number': 8403, 'Asset Key': '2060/10-012', 'Asset Type': 'External Hard', 'Asset Description': 'EXTERNAL 500 GB SN : 9913019', 'S/N': '9913019', Status: '', Comments: 'غير موجود', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
                     { Location: 'First Floor', 'Location Description': 'قسم الدراسات', 'Employee Number': 800, 'Full Name': 'Hossam Helmy Abdallah', 'Asset Number': 33072, 'Asset Key': '2060/06-257', 'Asset Type': 'Printer', 'Asset Description': 'HP DeskJet M1536 Pro All In One SN : CNG8G2K97L', 'S/N': 'CNG8G2K97L', Status: 'Needs maintenance', Comments: 'توفى .... ويستخدمها مهندس ماير ماهر', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': 'نقل الى م/ ماير ماهر' }
@@ -2615,11 +2621,61 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // ==================== حفظ وتحميل من localStorage ====================
+        // ==================== حفظ وتحميل من localStorage / الخادم ====================
+        async function loadFromServer() {
+            try {
+                const response = await fetch('data.php', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const json = await response.json();
+                if (Array.isArray(json)) return json;
+                if (json && Array.isArray(json.data)) return json.data;
+                return null;
+            } catch (e) {
+                console.warn('loadFromServer:', e);
+                return null;
+            }
+        }
+
+        async function saveToServer() {
+            try {
+                const response = await fetch('save.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(assetsData)
+                });
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                const json = await response.json();
+                if (!json || !json.success) {
+                    throw new Error(json && json.message ? json.message : 'Unknown error');
+                }
+                return true;
+            } catch (e) {
+                console.warn('saveToServer:', e);
+                return false;
+            }
+        }
+
         function saveToLocalStorage() {
             localStorage.setItem('assetsData', JSON.stringify(assetsData));
             updateLastUpdate();
             showAlert(translations[currentLang].saved, 'success');
+
+            // حاول الحفظ على الخادم أيضاً (إن كانت الصفحة تعمل من خادم)
+            saveToServer().then(success => {
+                if (!success) {
+                    showAlert('فشل حفظ البيانات على الخادم. تم حفظها محليًا فقط.', 'warning');
+                }
+            });
         }
 
         function loadFromLocalStorage() {
