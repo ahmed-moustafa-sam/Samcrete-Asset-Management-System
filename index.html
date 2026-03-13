@@ -918,7 +918,13 @@
                 <i class="fas fa-upload"></i>
                 <span id="uploadBtnText">تحميل ملف Excel</span>
             </button>
-            <input type="file" id="fileInput" accept=".xlsx,.xls" style="display: none;" onchange="handleFileUpload(this)">
+            <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display: none;" onchange="handleFileUpload(this)">
+            
+            <button class="add-btn" onclick="document.getElementById('csvImportInput').click()">
+                <i class="fas fa-file-csv"></i>
+                <span>استيراد CSV</span>
+            </button>
+            <input type="file" id="csvImportInput" accept=".csv" style="display: none;" onchange="importFromCSV(this)">
             
             <button class="add-btn" onclick="showColumnMapper()">
                 <i class="fas fa-columns"></i>
@@ -948,6 +954,11 @@
             <button class="export-btn" onclick="exportToExcel()">
                 <i class="fas fa-file-excel"></i>
                 <span id="exportBtnText">تصدير Excel</span>
+            </button>
+            
+            <button class="export-btn" onclick="exportToCSV()" style="background: linear-gradient(135deg, #059669, #047857);">
+                <i class="fas fa-file-csv"></i>
+                <span>تصدير CSV</span>
             </button>
             
             <button class="clear-filters" onclick="clearAllData()" style="background: #ef4444; margin-right: auto;">
@@ -1469,22 +1480,8 @@
         // ==================== تهيئة البيانات من الملف ====================
         async function initializeData() {
             try {
-                // محاولة تحميل البيانات من الخادم (data.php) أولاً
-                let serverData = null;
-                try {
-                    serverData = await loadFromServer();
-                } catch (e) {
-                    console.warn('فشل تحميل البيانات من الخادم:', e);
-                }
-
-                // إذا تم تحميل بيانات من الخادم، فسنستخدمها
-                if (Array.isArray(serverData) && serverData.length > 0) {
-                    assetsData = serverData;
-                    console.log('تم تحميل البيانات من الخادم');
-                }
-
-                // محاولة تحميل البيانات من localStorage إذا لم تكن هناك بيانات من الخادم
-                let savedData = serverData && serverData.length ? null : localStorage.getItem('assetsData');
+                // محاولة تحميل البيانات من localStorage
+                let savedData = localStorage.getItem('assetsData');
 
                 // إذا كانت البيانات محفوظة خطأً تحت dashboardFilters (بسبب نسخة أقدم من التطبيق)، نقوم بترحيلها
                 if (!savedData) {
@@ -1509,11 +1506,7 @@
                     }
                 }
 
-                const serverDataLoaded = Array.isArray(serverData) && serverData.length > 0;
-
-                if (serverDataLoaded) {
-                    // البيانات تم تحميلها بالفعل من الخادم أعلاه
-                } else if (savedData) {
+                if (savedData) {
                     try {
                         const parsedData = JSON.parse(savedData);
                         console.log('البيانات المحفوظة:', parsedData);
@@ -1532,60 +1525,24 @@
                             assetsData = extractedAssetsData;
                             console.log('تم تحميل البيانات من localStorage');
                         } else {
-                            console.error('البيانات المحفوظة فارغة أو غير صحيحة، سيتم مسحها واستخدام البيانات الافتراضية');
+                            console.error('البيانات المحفوظة فارغة أو غير صحيحة، سيتم مسحها واستخدام صفحة فارغة');
                             localStorage.removeItem('assetsData');
                             assetsData = [];
                         }
                     } catch (e) {
-                        console.error('خطأ في تحليل البيانات المحفوظة، سيتم مسحها واستخدام البيانات الافتراضية');
+                        console.error('خطأ في تحليل البيانات المحفوظة، سيتم مسحها واستخدام صفحة فارغة');
                         localStorage.removeItem('assetsData');
                         assetsData = [];
                     }
                 } else {
-                    // لا توجد بيانات محفوظة في الخادم أو localStorage، ابدأ بصفحة فارغة
+                    // لا توجد بيانات محفوظة، ابدأ بصفحة فارغة
                     assetsData = [];
                 }
                 
                 // تحديد الأعمدة
-                    { Location: 'First Floor', 'Location Description': 'قسم الدراسات', 'Employee Number': 2809, 'Full Name': 'Abanoub Fathy Shehata Geries', 'Asset Number': 15259, 'Asset Key': '2060/04-040', 'Asset Type': 'Screen', 'Asset Description': 'Dell LCD SN : 098182540010002', 'S/N': '98182540010002', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                    { Location: 'First Floor', 'Location Description': 'الادارة العامة للانشاءات', 'Employee Number': 836, 'Full Name': 'Peter Rafaat Labib Ghabbour', 'Asset Number': 8403, 'Asset Key': '2060/10-012', 'Asset Type': 'External Hard', 'Asset Description': 'EXTERNAL 500 GB SN : 9913019', 'S/N': '9913019', Status: '', Comments: 'غير موجود', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                    { Location: 'First Floor', 'Location Description': 'قسم الدراسات', 'Employee Number': 800, 'Full Name': 'Hossam Helmy Abdallah', 'Asset Number': 33072, 'Asset Key': '2060/06-257', 'Asset Type': 'Printer', 'Asset Description': 'HP DeskJet M1536 Pro All In One SN : CNG8G2K97L', 'S/N': 'CNG8G2K97L', Status: 'Needs maintenance', Comments: 'توفى .... ويستخدمها مهندس ماير ماهر', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': 'نقل الى م/ ماير ماهر' }
-                ];
-                
-                // بيانات 2nd Floor
-                const secondFloorData = [
-                    { Location: 'Second Floor', 'Location Description': 'قسم المشتريات', 'Employee Number': 2204, 'Full Name': 'Bishoy Samy Kamel Mossad', 'Asset Number': 53543, 'Asset Key': '2060/06-453', 'Asset Type': 'Printer', 'Asset Description': 'HP 426 SN : PHBLL9L27G', 'S/N': 'PHBLL9L27G', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' }
-                ];
-                
-                // بيانات 3rd Floor
-                const thirdFloorData = [
-                    { Location: 'Third Floor', 'Location Description': 'قسم النظم والمعلومات', 'Employee Number': 46, 'Full Name': 'Fayek Noshy Eshaq Guirguis', 'Asset Number': 186107, 'Asset Key': '2060/12-102', 'Asset Type': 'Access Point', 'Asset Description': 'Access Point WireLess TP Link OC200', 'S/N': '22143P8000262', Status: '', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' }
-                ];
-                
-                // بيانات Warehouse
-                const warehouseData = [
-                    { Location: 'Warehouse', 'Location Description': '', 'Employee Number': '', 'Full Name': '', 'Asset Number': '', 'Asset Key': '2060/01-419', 'Asset Type': 'Desk Top', 'Asset Description': 'Dell 3020 I3 3.5/3 RAM 8 GB HD 500 GB DVD', 'S/N': 'CJ63L52', Status: 'Outdated', Comments: 'Outdated', 'QR Code': '', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                    { Location: 'Warehouse', 'Location Description': '', 'Employee Number': '', 'Full Name': '', 'Asset Number': '', 'Asset Key': '2060/01-470', 'Asset Type': 'Desk Top', 'Asset Description': 'Dell 3020 I3 3.5/3 RAM 8 GB HD 500 GB DVD', 'S/N': 'C378CB2', Status: 'Outdated', Comments: 'need hd ssd', 'QR Code': '', 'Check status': 'Checked', 'تعليق المخازن': '' }
-                ];
-                
-                // دمج جميع البيانات
-                assetsData = [...groundData, ...firstFloorData, ...secondFloorData, ...thirdFloorData, ...warehouseData];
-                
-                // إضافة معرف فريد لكل جهاز
-                assetsData = assetsData.map((asset, index) => ({
-                    id: index + 1,
-                    ...asset
-                }));
-                
-                // حفظ البيانات الافتراضية في localStorage إذا لم تكن هناك بيانات محفوظة
-                if (!savedData) {
-                    localStorage.setItem('assetsData', JSON.stringify(assetsData));
+                if (assetsData.length > 0) {
+                    columns = Object.keys(assetsData[0]);
                 }
-                
-                    console.log('تم تحميل البيانات الافتراضية');
-                }
-                
-                // تحديد الأعمدة
                 if (assetsData.length > 0) {
                     columns = Object.keys(assetsData[0]);
                 }
@@ -2621,61 +2578,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // ==================== حفظ وتحميل من localStorage / الخادم ====================
-        async function loadFromServer() {
-            try {
-                const response = await fetch('data.php', {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
-                });
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const json = await response.json();
-                if (Array.isArray(json)) return json;
-                if (json && Array.isArray(json.data)) return json.data;
-                return null;
-            } catch (e) {
-                console.warn('loadFromServer:', e);
-                return null;
-            }
-        }
-
-        async function saveToServer() {
-            try {
-                const response = await fetch('save.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify(assetsData)
-                });
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                const json = await response.json();
-                if (!json || !json.success) {
-                    throw new Error(json && json.message ? json.message : 'Unknown error');
-                }
-                return true;
-            } catch (e) {
-                console.warn('saveToServer:', e);
-                return false;
-            }
-        }
-
+        // ==================== حفظ وتحميل من localStorage فقط ====================
         function saveToLocalStorage() {
             localStorage.setItem('assetsData', JSON.stringify(assetsData));
             updateLastUpdate();
             showAlert(translations[currentLang].saved, 'success');
-
-            // حاول الحفظ على الخادم أيضاً (إن كانت الصفحة تعمل من خادم)
-            saveToServer().then(success => {
-                if (!success) {
-                    showAlert('فشل حفظ البيانات على الخادم. تم حفظها محليًا فقط.', 'warning');
-                }
-            });
         }
 
         function loadFromLocalStorage() {
@@ -2698,6 +2605,65 @@ document.addEventListener('DOMContentLoaded', function() {
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, 'Assets');
             XLSX.writeFile(workbook, `samcrete_assets_${new Date().toISOString().slice(0,10)}.xlsx`);
+        }
+
+        // ==================== تصدير إلى CSV ====================
+        function exportToCSV() {
+            const headers = Object.keys(filteredData[0] || {});
+            const csvContent = [
+                headers.join(','),
+                ...filteredData.map(row => headers.map(h => `"${(row[h] || '').toString().replace(/"/g, '""')}"`).join(','))
+            ].join('\n');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `samcrete_assets_${new Date().toISOString().slice(0,10)}.csv`;
+            link.click();
+        }
+
+        // ==================== استيراد من CSV ====================
+        function importFromCSV(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const csvText = e.target.result;
+                const lines = csvText.split('\n').filter(line => line.trim());
+                if (lines.length < 2) {
+                    showAlert('الملف فارغ أو لا يحتوي على بيانات صحيحة', 'error');
+                    return;
+                }
+
+                const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').replace(/""/g, '"'));
+                const data = lines.slice(1).map(line => {
+                    const values = line.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').replace(/""/g, '"'));
+                    const obj = {};
+                    headers.forEach((h, i) => {
+                        obj[h] = values[i] || '';
+                    });
+                    return obj;
+                });
+
+                // إضافة معرف فريد لكل جهاز
+                const newData = data.map((asset, index) => ({
+                    id: Date.now() + index, // معرف فريد
+                    ...asset
+                }));
+
+                assetsData = [...assetsData, ...newData];
+                filteredData = [...assetsData];
+                
+                populateFilters();
+                applyFilter();
+                updateUI();
+                saveToLocalStorage();
+                
+                showAlert(`تم استيراد ${newData.length} جهاز من الملف`, 'success');
+            };
+            reader.readAsText(file, 'UTF-8');
+            input.value = ''; // إعادة تعيين الإدخال
         }
 
         // ==================== طباعة QR Code ====================
