@@ -2677,19 +2677,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // ==================== تصدير إلى CSV UTF-8 ====================
         function exportToCSV() {
-            const headers = Object.keys(filteredData[0] || {});
+            // جمع جميع الأعمدة الموجودة في البيانات
+            const allKeys = new Set();
+            filteredData.forEach(item => {
+                Object.keys(item).forEach(key => allKeys.add(key));
+            });
+
+            const headers = Array.from(allKeys).sort();
+            console.log('تصدير CSV مع الأعمدة:', headers);
+
             const csvContent = [
                 headers.join(','),
                 ...filteredData.map(row => headers.map(h => {
                     const value = (row[h] || '').toString();
-                    // إذا كان القيمة تحتوي على فاصلة أو علامات تنصيص، ضعها بين علامات تنصيص
-                    if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+                    // إذا كان القيمة تحتوي على فاصلة أو علامات تنصيص أو أسطر جديدة، ضعها بين علامات تنصيص
+                    if (value.includes(',') || value.includes('"') || value.includes('\n') || value.includes('\r')) {
                         return `"${value.replace(/"/g, '""')}"`;
                     }
                     return value;
                 }).join(','))
             ].join('\r\n');
-            
+
             // إضافة BOM للترميز UTF-8
             const BOM = '\uFEFF';
             const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -2713,15 +2721,39 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
 
-                const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').replace(/""/g, '"'));
-                const data = lines.slice(1).map(line => {
-                    const values = line.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').replace(/""/g, '"'));
+                // استخدام نفس دالة التحليل المحسنة
+                const headers = parseCSVLine(lines[0]);
+                console.log('استيراد CSV مع الأعمدة:', headers);
+
+                const data = [];
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+
+                    const values = parseCSVLine(line);
+                    console.log(`سطر ${i}:`, values.length, 'قيمة');
+
+                    // التأكد من أن عدد القيم يطابق عدد الرؤوس
+                    while (values.length < headers.length) {
+                        values.push('');
+                    }
+                    while (values.length > headers.length) {
+                        // دمج الأعمدة الإضافية في العمود الأخير
+                        const extra = values.splice(headers.length - 1);
+                        values[headers.length - 1] = values[headers.length - 1] + ' ' + extra.join(' ');
+                    }
+
                     const obj = {};
-                    headers.forEach((h, i) => {
-                        obj[h] = values[i] || '';
+                    headers.forEach((h, index) => {
+                        // تحويل id إلى رقم
+                        if (h === 'id' && values[index]) {
+                            obj[h] = parseInt(values[index], 10) || values[index];
+                        } else {
+                            obj[h] = values[index] || '';
+                        }
                     });
-                    return obj;
-                });
+                    data.push(obj);
+                }
 
                 // إضافة معرف فريد لكل جهاز
                 const newData = data.map((asset, index) => ({
@@ -2731,16 +2763,53 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 assetsData = [...assetsData, ...newData];
                 filteredData = [...assetsData];
-                
+
                 populateFilters();
                 applyFilter();
                 updateUI();
                 saveToLocalStorage();
-                
+
                 showAlert(`تم استيراد ${newData.length} جهاز من الملف`, 'success');
             };
             reader.readAsText(file, 'UTF-8');
             input.value = ''; // إعادة تعيين الإدخال
+        }
+
+        // دالة محسنة لتحليل سطر CSV
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            let i = 0;
+
+            while (i < line.length) {
+                const char = line[i];
+
+                if (char === '"') {
+                    if (inQuotes && line[i + 1] === '"') {
+                        // علامة تنصيص مزدوجة داخل النص
+                        current += '"';
+                        i += 2;
+                    } else {
+                        // تبديل حالة الاقتباس
+                        inQuotes = !inQuotes;
+                        i++;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    // فاصلة خارج الاقتباسات
+                    result.push(current.trim());
+                    current = '';
+                    i++;
+                } else {
+                    current += char;
+                    i++;
+                }
+            }
+
+            // إضافة القيمة الأخيرة
+            result.push(current.trim());
+
+            return result;
         }
 
         // ==================== طباعة QR Code ====================
