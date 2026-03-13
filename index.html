@@ -2664,7 +2664,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        function loadFromLocalStorage() {
+        function loadFromLsafeLocalStorageGet
             const saved = localStorage.getItem('assetsData');
             if (saved) {
                 try {
@@ -2782,6 +2782,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 const newContent = JSON.stringify(assetsData, null, 2);
                 const encodedContent = btoa(unescape(encodeURIComponent(newContent)));
 
+                // تحقق إذا كان المستودع موجودًا ويمكن الوصول إليه (يساعد على الكشف عن مشاكل الصلاحيات)
+                const repoResponse = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}`, {
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+
+                if (repoResponse.status === 404) {
+                    throw new Error('المستودع غير موجود أو لا يمكنك الوصول إليه. تحقق من اسم المستخدم، اسم المستودع، وصلاحيات رمز الوصول.');
+                }
+                if (repoResponse.status === 403) {
+                    throw new Error('لا تمتلك صلاحية الوصول إلى هذا المستودع. تأكد من أن رمز الوصول لديه نطاق (repo) أو أن المستودع عام.');
+                }
+
                 // التحقق من وجود الملف أولاً
                 const checkResponse = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`, {
                     headers: {
@@ -2817,6 +2832,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     updateLastUpdate();
                 } else {
                     const errorData = await response.json();
+                    if (response.status === 404 || response.status === 403) {
+                        throw new Error('تعذر الوصول إلى المستودع أو الملف. تحقق من صلاحيات رمز الوصول (repo scope) وأن المستودع موجود ويمكنك الوصول إليه.');
+                    }
                     throw new Error(errorData.message || 'فشل في إنشاء الملف');
                 }
 
@@ -2871,7 +2889,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const autoSaveEnabled = safeLocalStorageGet('github_auto_save') === 'true';
 
             const settingsHtml = `
-                <div style="text-align: right; direction: rtl; padding: 20px; background: #f8f9fa; border-radius: 10px;">
+                <form onsubmit="return false;" style="text-align: right; direction: rtl; padding: 20px; background: #f8f9fa; border-radius: 10px;">
                     <div style="margin-bottom: 20px; padding: 15px; background: #fff3cd; border-radius: 5px; border-right: 4px solid #ffc107;">
                         <h5 style="margin: 0 0 10px 0; color: #856404;">⚠️ تنبيه أمان المتصفح</h5>
                         <p style="margin: 0; font-size: 14px; color: #856404;">
@@ -2882,7 +2900,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     <div style="margin-bottom: 15px;">
                         <label style="display: block; margin-bottom: 5px; font-weight: bold;">رمز الوصول الشخصي:</label>
-                        <input type="password" id="githubTokenInput" placeholder="أدخل رمز الوصول" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                        <input type="password" id="githubTokenInput" placeholder="أدخل رمز الوصول" autocomplete="new-password" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
                         <small style="color: #666; display: block; margin-top: 5px;">
                             الحالي: ${currentToken}<br>
                             يمكن إنشاؤه من: <a href="https://github.com/settings/tokens" target="_blank">GitHub Tokens</a>
@@ -2898,20 +2916,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     <div style="margin-bottom: 15px;">
                         <label style="display: block; margin-bottom: 5px; font-weight: bold;">اسم المستخدم على GitHub:</label>
-                        <input type="text" id="githubOwnerInput" placeholder="مثال: AhmedIbrahimMoustafa" value="${localStorage.getItem('github_owner') || 'AhmedIbrahimMoustafa'}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                        <input type="text" id="githubOwnerInput" placeholder="مثال: AhmedIbrahimMoustafa" value="${safeLocalStorageGet('github_owner') || 'AhmedIbrahimMoustafa'}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
                     </div>
 
                     <div style="margin-bottom: 20px;">
                         <label style="display: block; margin-bottom: 5px; font-weight: bold;">اسم المستودع:</label>
-                        <input type="text" id="githubRepoInput" placeholder="مثال: samcrete-assets" value="${localStorage.getItem('github_repo') || 'samcrete-assets'}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                        <input type="text" id="githubRepoInput" placeholder="مثال: samcrete-assets" value="${safeLocalStorageGet('github_repo') || 'samcrete-assets'}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
                     </div>
 
                     <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                        <button onclick="createInitialGitHubFile()" style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">إنشاء ملف أولي</button>
-                        <button onclick="this.parentNode.parentNode.parentNode.remove()" style="padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">إلغاء</button>
-                        <button onclick="saveGitHubSettings()" style="padding: 8px 16px; background: #1e3c72; color: white; border: none; border-radius: 5px; cursor: pointer;">حفظ الإعدادات</button>
+                        <button type="button" onclick="createInitialGitHubFile()" style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">إنشاء ملف أولي</button>
+                        <button type="button" onclick="this.closest('form').remove()" style="padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">إلغاء</button>
+                        <button type="button" onclick="saveGitHubSettings()" style="padding: 8px 16px; background: #1e3c72; color: white; border: none; border-radius: 5px; cursor: pointer;">حفظ الإعدادات</button>
                     </div>
-                </div>
+                </form>
             `;
 
             const modal = document.createElement('div');
