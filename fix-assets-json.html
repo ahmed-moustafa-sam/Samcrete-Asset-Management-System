@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إصلاح ملف assets.json - Samcrete</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1e3c72;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        textarea {
+            width: 100%;
+            height: 300px;
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-family: monospace;
+            direction: ltr;
+        }
+        button {
+            background: #1e3c72;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #2a5298;
+        }
+        .instructions {
+            background: #e8f4f8;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .result {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            border-left: 4px solid #1e3c72;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>أداة إصلاح ملف assets.json</h1>
+
+        <div class="instructions">
+            <h3>كيفية إصلاح المشكلة:</h3>
+            <ol>
+                <li>افتح ملف assets.json الحالي في محرر نصوص</li>
+                <li>انسخ محتوى الملف والصقه في حقل "البيانات الحالية"</li>
+                <li>اضغط "إصلاح البيانات"</li>
+                <li>انسخ النتيجة من حقل "النتيجة المُصلحة"</li>
+                <li>استبدل محتوى ملف assets.json بالنتيجة</li>
+            </ol>
+        </div>
+
+        <h3>البيانات الحالية (من assets.json):</h3>
+        <textarea id="currentData" placeholder="الصق محتوى ملف assets.json هنا..."></textarea>
+
+        <button onclick="fixData()">إصلاح البيانات</button>
+        <button onclick="clearAll()">مسح الكل</button>
+
+        <div class="result" id="resultDiv" style="display: none;">
+            <h3>النتيجة المُصلحة:</h3>
+            <textarea id="fixedData" readonly></textarea>
+            <button onclick="copyResult()">نسخ النتيجة</button>
+        </div>
+    </div>
+
+    <script>
+        function fixData() {
+            const input = document.getElementById('currentData').value.trim();
+            if (!input) {
+                alert('يرجى إدخال البيانات');
+                return;
+            }
+
+            try {
+                let data = JSON.parse(input);
+
+                // التأكد من أن البيانات مصفوفة
+                if (!Array.isArray(data)) {
+                    data = [data];
+                }
+
+                // تنظيف البيانات وإصلاح الهيكل
+                const cleanedData = data.map((item, index) => {
+                    // التأكد من وجود id
+                    if (!item.id) {
+                        item.id = index + 1;
+                    }
+
+                    // تنظيف القيم الفارغة
+                    Object.keys(item).forEach(key => {
+                        if (item[key] === null || item[key] === undefined) {
+                            item[key] = '';
+                        }
+                    });
+
+                    return item;
+                });
+
+                // إزالة التكرارات إذا وجدت
+                const uniqueData = cleanedData.filter((item, index, self) =>
+                    index === self.findIndex(i => i.id === item.id)
+                );
+
+                document.getElementById('fixedData').value = JSON.stringify(uniqueData, null, 2);
+                document.getElementById('resultDiv').style.display = 'block';
+
+                alert(`تم إصلاح ${uniqueData.length} سجل`);
+
+            } catch (e) {
+                alert('خطأ في تحليل البيانات: ' + e.message);
+            }
+        }
+
+        function copyResult() {
+            const text = document.getElementById('fixedData').value;
+            if (!text) {
+                alert('لا توجد نتيجة للنسخ');
+                return;
+            }
+
+            navigator.clipboard.writeText(text).then(() => {
+                alert('تم نسخ النتيجة إلى الحافظة');
+            }).catch(() => {
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('تم نسخ النتيجة إلى الحافظة');
+            });
+        }
+
+        function clearAll() {
+            document.getElementById('currentData').value = '';
+            document.getElementById('fixedData').value = '';
+            document.getElementById('resultDiv').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
