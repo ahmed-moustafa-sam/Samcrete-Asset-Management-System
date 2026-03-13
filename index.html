@@ -2653,13 +2653,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         function saveToLocalStorage() {
-            localStorage.setItem('assetsData', JSON.stringify(assetsData));
-            updateLastUpdate();
-            showAlert(translations[currentLang].saved, 'success');
+            if (safeLocalStorageSet('assetsData', JSON.stringify(assetsData))) {
+                updateLastUpdate();
+                showAlert(translations[currentLang].saved, 'success');
 
-            // حفظ تلقائي على GitHub إذا كان مفعلاً
-            if (localStorage.getItem('github_auto_save') === 'true') {
-                setTimeout(() => saveToGitHub(), 1500); // تأخير لإعطاء وقت للرسالة الأولى
+                // حفظ تلقائي على GitHub إذا كان مفعلاً
+                if (safeLocalStorageGet('github_auto_save') === 'true') {
+                    setTimeout(() => saveToGitHub(), 1500); // تأخير لإعطاء وقت للرسالة الأولى
+                }
             }
         }
 
@@ -2687,22 +2688,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
             try {
                 // الحصول على رمز الوصول من localStorage (يجب إدخاله مرة واحدة)
-                const token = localStorage.getItem('github_token');
+                const token = safeLocalStorageGet('github_token');
                 if (!token) {
                     const newToken = prompt('يرجى إدخال رمز الوصول الشخصي لـ GitHub (Personal Access Token):\n\nيمكنك إنشاؤه من: https://github.com/settings/tokens\n\nاختر الصلاحيات: repo');
                     if (!newToken) return;
-                    localStorage.setItem('github_token', newToken.trim());
+                    safeLocalStorageSet('github_token', newToken.trim());
                 }
 
                 // إعدادات المستودع (من localStorage أو القيم الافتراضية)
-                const repoOwner = localStorage.getItem('github_owner') || 'AhmedIbrahimMoustafa';
-                const repoName = localStorage.getItem('github_repo') || 'samcrete-assets';
+                const repoOwner = safeLocalStorageGet('github_owner') || 'AhmedIbrahimMoustafa';
+                const repoName = safeLocalStorageGet('github_repo') || 'samcrete-assets';
                 const filePath = 'assets.json';
 
                 // الحصول على معلومات الملف الحالي
                 const getResponse = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`, {
                     headers: {
-                        'Authorization': `token ${localStorage.getItem('github_token')}`,
+                        'Authorization': `token ${safeLocalStorageGet('github_token')}`,
                         'Accept': 'application/vnd.github.v3+json'
                     }
                 });
@@ -2726,7 +2727,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const updateResponse = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`, {
                     method: 'PUT',
                     headers: {
-                        'Authorization': `token ${localStorage.getItem('github_token')}`,
+                        'Authorization': `token ${safeLocalStorageGet('github_token')}`,
                         'Accept': 'application/vnd.github.v3+json',
                         'Content-Type': 'application/json'
                     },
@@ -2751,7 +2752,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // إعادة تعيين الرمز المميز إذا كان غير صالح
                 if (error.message.includes('Bad credentials')) {
-                    localStorage.removeItem('github_token');
+                    safeLocalStorageRemove('github_token');
                     alert('رمز الوصول غير صالح. يرجى إدخاله مرة أخرى.');
                 }
             }
@@ -2766,15 +2767,15 @@ document.addEventListener('DOMContentLoaded', function() {
             showAlert('جاري إنشاء الملف على GitHub...', 'info');
 
             try {
-                const token = localStorage.getItem('github_token');
+                const token = safeLocalStorageGet('github_token');
                 if (!token) {
                     alert('يرجى إعداد رمز الوصول أولاً من إعدادات GitHub');
                     setupGitHubSettings();
                     return;
                 }
 
-                const repoOwner = localStorage.getItem('github_owner') || 'AhmedIbrahimMoustafa';
-                const repoName = localStorage.getItem('github_repo') || 'samcrete-assets';
+                const repoOwner = safeLocalStorageGet('github_owner') || 'AhmedIbrahimMoustafa';
+                const repoName = safeLocalStorageGet('github_repo') || 'samcrete-assets';
                 const filePath = 'assets.json';
 
                 // تحضير البيانات الجديدة
@@ -2824,7 +2825,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 showAlert('فشل في إنشاء الملف: ' + error.message, 'error');
 
                 if (error.message.includes('Bad credentials')) {
-                    localStorage.removeItem('github_token');
+                    safeLocalStorageRemove('github_token');
                     alert('رمز الوصول غير صالح. يرجى إدخاله مرة أخرى.');
                 } else if (error.message.includes('Not Found')) {
                     alert('المستودع غير موجود. تأكد من:\n1. اسم المستخدم الصحيح\n2. اسم المستودع الصحيح\n3. أن المستودع عام (public)');
@@ -2832,17 +2833,50 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
+        // ==================== مساعدات localStorage الآمنة ====================
+        function safeLocalStorageGet(key, defaultValue = null) {
+            try {
+                return localStorage.getItem(key);
+            } catch (error) {
+                console.warn('Tracking Prevention blocked localStorage access:', error);
+                showAlert('تحذير: المتصفح يمنع الوصول إلى التخزين المحلي. قد تفقد البيانات عند إغلاق الصفحة.', 'warning');
+                return defaultValue;
+            }
+        }
+
+        function safeLocalStorageSet(key, value) {
+            try {
+                localStorage.setItem(key, value);
+                return true;
+            } catch (error) {
+                console.warn('Tracking Prevention blocked localStorage access:', error);
+                showAlert('تحذير: فشل في حفظ البيانات محلياً. المتصفح يمنع الوصول إلى التخزين.', 'error');
+                return false;
+            }
+        }
+
+        function safeLocalStorageRemove(key) {
+            try {
+                localStorage.removeItem(key);
+                return true;
+            } catch (error) {
+                console.warn('Tracking Prevention blocked localStorage access:', error);
+                return false;
+            }
+        }
+
         // ==================== إعدادات GitHub ====================
         function setupGitHubSettings() {
-            const autoSaveEnabled = localStorage.getItem('github_auto_save') === 'true';
+            const currentToken = safeLocalStorageGet('github_token') ? '***' + safeLocalStorageGet('github_token').slice(-4) : 'غير محدد';
+            const autoSaveEnabled = safeLocalStorageGet('github_auto_save') === 'true';
 
             const settingsHtml = `
                 <div style="text-align: right; direction: rtl; padding: 20px; background: #f8f9fa; border-radius: 10px;">
-                    <div style="margin-bottom: 20px; padding: 15px; background: #e9ecef; border-radius: 5px; border-right: 4px solid #1e3c72;">
-                        <h5 style="margin: 0 0 10px 0; color: #1e3c72;">📁 إنشاء ملف البيانات الأولي</h5>
-                        <p style="margin: 0; font-size: 14px; color: #495057;">
-                            إذا كان هذا أول استخدام للنظام، يجب إنشاء ملف <strong>assets.json</strong> على GitHub أولاً.
-                            استخدم زر "إنشاء ملف أولي" لحفظ البيانات الحالية كملف أولي.
+                    <div style="margin-bottom: 20px; padding: 15px; background: #fff3cd; border-radius: 5px; border-right: 4px solid #ffc107;">
+                        <h5 style="margin: 0 0 10px 0; color: #856404;">⚠️ تنبيه أمان المتصفح</h5>
+                        <p style="margin: 0; font-size: 14px; color: #856404;">
+                            إذا ظهرت رسائل "Tracking Prevention blocked access"، فهذا يعني أن المتصفح يحميك من التتبع.
+                            يمكنك تعطيل هذه الميزة مؤقتاً أو استخدام وضع التصفح الخفي لتجنب فقدان البيانات.
                         </p>
                     </div>
 
@@ -2897,11 +2931,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const repo = document.getElementById('githubRepoInput').value.trim();
 
             if (token) {
-                localStorage.setItem('github_token', token);
+                safeLocalStorageSet('github_token', token);
             }
-            localStorage.setItem('github_auto_save', autoSave.toString());
-            if (owner) localStorage.setItem('github_owner', owner);
-            if (repo) localStorage.setItem('github_repo', repo);
+            safeLocalStorageSet('github_auto_save', autoSave.toString());
+            if (owner) safeLocalStorageSet('github_owner', owner);
+            if (repo) safeLocalStorageSet('github_repo', repo);
 
             // إغلاق النافذة
             document.querySelector('[style*="position: fixed"]').remove();
