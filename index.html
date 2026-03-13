@@ -966,6 +966,16 @@
                 <span>تحويل CSV لـ GitHub</span>
             </button>
             
+            <button class="export-btn" onclick="saveToGitHub()" style="background: linear-gradient(135deg, #059669, #10b981);">
+                <i class="fab fa-github"></i>
+                <span>حفظ على GitHub</span>
+            </button>
+            
+            <button class="export-btn" onclick="setupGitHubSettings()" style="background: linear-gradient(135deg, #6b7280, #4b5563);">
+                <i class="fas fa-cog"></i>
+                <span>إعدادات GitHub</span>
+            </button>
+            
             <button class="clear-filters" onclick="clearAllData()" style="background: #ef4444; margin-right: auto;">
                 <i class="fas fa-trash"></i>
                 <span id="clearDataBtnText">تنظيف البيانات</span>
@@ -2646,6 +2656,11 @@ document.addEventListener('DOMContentLoaded', function() {
             localStorage.setItem('assetsData', JSON.stringify(assetsData));
             updateLastUpdate();
             showAlert(translations[currentLang].saved, 'success');
+
+            // حفظ تلقائي على GitHub إذا كان مفعلاً
+            if (localStorage.getItem('github_auto_save') === 'true') {
+                setTimeout(() => saveToGitHub(), 1500); // تأخير لإعطاء وقت للرسالة الأولى
+            }
         }
 
         function loadFromLocalStorage() {
@@ -2660,6 +2675,153 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.error('خطأ في تحميل البيانات المحفوظة');
                 }
             }
+        }
+
+        // ==================== حفظ التغييرات على GitHub ====================
+        async function saveToGitHub() {
+            if (!confirm('هل تريد حفظ جميع التغييرات على GitHub؟\n\nسيتم تحديث ملف assets.json في المستودع.')) {
+                return;
+            }
+
+            showAlert('جاري الحفظ على GitHub...', 'info');
+
+            try {
+                // الحصول على رمز الوصول من localStorage (يجب إدخاله مرة واحدة)
+                const token = localStorage.getItem('github_token');
+                if (!token) {
+                    const newToken = prompt('يرجى إدخال رمز الوصول الشخصي لـ GitHub (Personal Access Token):\n\nيمكنك إنشاؤه من: https://github.com/settings/tokens\n\nاختر الصلاحيات: repo');
+                    if (!newToken) return;
+                    localStorage.setItem('github_token', newToken.trim());
+                }
+
+                // إعدادات المستودع (من localStorage أو القيم الافتراضية)
+                const repoOwner = localStorage.getItem('github_owner') || 'AhmedIbrahimMoustafa';
+                const repoName = localStorage.getItem('github_repo') || 'samcrete-assets';
+                const filePath = 'assets.json';
+
+                // الحصول على معلومات الملف الحالي
+                const getResponse = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`, {
+                    headers: {
+                        'Authorization': `token ${localStorage.getItem('github_token')}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+
+                if (!getResponse.ok) {
+                    throw new Error('فشل في الوصول إلى الملف على GitHub');
+                }
+
+                const fileData = await getResponse.json();
+                const currentSha = fileData.sha;
+
+                // تحضير البيانات الجديدة
+                const newContent = JSON.stringify(assetsData, null, 2);
+                const encodedContent = btoa(unescape(encodeURIComponent(newContent)));
+
+                // تحديث الملف
+                const updateResponse = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${localStorage.getItem('github_token')}`,
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: `تحديث البيانات - ${new Date().toLocaleString('ar-EG')}`,
+                        content: encodedContent,
+                        sha: currentSha
+                    })
+                });
+
+                if (updateResponse.ok) {
+                    showAlert('تم حفظ التغييرات على GitHub بنجاح!', 'success');
+                    updateLastUpdate();
+                } else {
+                    const errorData = await updateResponse.json();
+                    throw new Error(errorData.message || 'فشل في الحفظ');
+                }
+
+            } catch (error) {
+                console.error('خطأ في حفظ GitHub:', error);
+                showAlert('فشل في الحفظ على GitHub: ' + error.message, 'error');
+
+                // إعادة تعيين الرمز المميز إذا كان غير صالح
+                if (error.message.includes('Bad credentials')) {
+                    localStorage.removeItem('github_token');
+                    alert('رمز الوصول غير صالح. يرجى إدخاله مرة أخرى.');
+                }
+            }
+        }
+
+        // ==================== إعدادات GitHub ====================
+        function setupGitHubSettings() {
+            const currentToken = localStorage.getItem('github_token') ? '***' + localStorage.getItem('github_token').slice(-4) : 'غير محدد';
+            const autoSaveEnabled = localStorage.getItem('github_auto_save') === 'true';
+
+            const settingsHtml = `
+                <div style="text-align: right; direction: rtl; padding: 20px; background: #f8f9fa; border-radius: 10px;">
+                    <h4 style="color: #1e3c72; margin-bottom: 20px;">إعدادات GitHub</h4>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">رمز الوصول الشخصي:</label>
+                        <input type="password" id="githubTokenInput" placeholder="أدخل رمز الوصول" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                        <small style="color: #666; display: block; margin-top: 5px;">
+                            الحالي: ${currentToken}<br>
+                            يمكن إنشاؤه من: <a href="https://github.com/settings/tokens" target="_blank">GitHub Tokens</a>
+                        </small>
+                    </div>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: flex; align-items: center; gap: 10px;">
+                            <input type="checkbox" id="autoSaveCheckbox" ${autoSaveEnabled ? 'checked' : ''}>
+                            <span>تفعيل الحفظ التلقائي على GitHub عند حفظ البيانات محلياً</span>
+                        </label>
+                    </div>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">اسم المستخدم على GitHub:</label>
+                        <input type="text" id="githubOwnerInput" placeholder="مثال: AhmedIbrahimMoustafa" value="${localStorage.getItem('github_owner') || 'AhmedIbrahimMoustafa'}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">اسم المستودع:</label>
+                        <input type="text" id="githubRepoInput" placeholder="مثال: samcrete-assets" value="${localStorage.getItem('github_repo') || 'samcrete-assets'}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                    </div>
+
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button onclick="this.parentNode.parentNode.parentNode.remove()" style="padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">إلغاء</button>
+                        <button onclick="saveGitHubSettings()" style="padding: 8px 16px; background: #1e3c72; color: white; border: none; border-radius: 5px; cursor: pointer;">حفظ الإعدادات</button>
+                    </div>
+                </div>
+            `;
+
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0,0,0,0.5); z-index: 9999; display: flex;
+                align-items: center; justify-content: center;
+            `;
+            modal.innerHTML = settingsHtml;
+            document.body.appendChild(modal);
+        }
+
+        function saveGitHubSettings() {
+            const token = document.getElementById('githubTokenInput').value.trim();
+            const autoSave = document.getElementById('autoSaveCheckbox').checked;
+            const owner = document.getElementById('githubOwnerInput').value.trim();
+            const repo = document.getElementById('githubRepoInput').value.trim();
+
+            if (token) {
+                localStorage.setItem('github_token', token);
+            }
+            localStorage.setItem('github_auto_save', autoSave.toString());
+            if (owner) localStorage.setItem('github_owner', owner);
+            if (repo) localStorage.setItem('github_repo', repo);
+
+            // إغلاق النافذة
+            document.querySelector('[style*="position: fixed"]').remove();
+
+            showAlert('تم حفظ إعدادات GitHub', 'success');
         }
 
         // ==================== فتح أداة التحويل ====================
