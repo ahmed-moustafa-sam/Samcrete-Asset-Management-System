@@ -2683,19 +2683,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 Object.keys(item).forEach(key => allKeys.add(key));
             });
 
+            // ملاحظة: Excel العربي غالبًا يتوقع الفاصلة المنقوطة كـ "delimiter"
+            const delimiter = ';';
             const headers = Array.from(allKeys).sort();
             console.log('تصدير CSV مع الأعمدة:', headers);
 
             const csvContent = [
-                headers.join(','),
+                headers.join(delimiter),
                 ...filteredData.map(row => headers.map(h => {
                     const value = (row[h] || '').toString();
-                    // إذا كان القيمة تحتوي على فاصلة أو علامات تنصيص أو أسطر جديدة، ضعها بين علامات تنصيص
-                    if (value.includes(',') || value.includes('"') || value.includes('\n') || value.includes('\r')) {
+                    // إذا كان القيمة تحتوي على delimiter أو علامات تنصيص أو أسطر جديدة، ضعها بين علامات تنصيص
+                    if (value.includes(delimiter) || value.includes('"') || value.includes('\n') || value.includes('\r')) {
                         return `"${value.replace(/"/g, '""')}"`;
                     }
                     return value;
-                }).join(','))
+                }).join(delimiter))
             ].join('\r\n');
 
             // إضافة BOM للترميز UTF-8
@@ -2721,16 +2723,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
 
+                // اكتشاف الفاصل (delimiter) من أول سطر
+                const delimiter = detectDelimiter(lines[0]);
+
                 // استخدام نفس دالة التحليل المحسنة
-                const headers = parseCSVLine(lines[0]);
-                console.log('استيراد CSV مع الأعمدة:', headers);
+                const headers = parseCSVLine(lines[0], delimiter);
+                console.log('استيراد CSV مع الأعمدة:', headers, 'delimiter:', delimiter);
 
                 const data = [];
                 for (let i = 1; i < lines.length; i++) {
                     const line = lines[i].trim();
                     if (!line) continue;
 
-                    const values = parseCSVLine(line);
+                    const values = parseCSVLine(line, delimiter);
                     console.log(`سطر ${i}:`, values.length, 'قيمة');
 
                     // التأكد من أن عدد القيم يطابق عدد الرؤوس
@@ -2775,12 +2780,29 @@ document.addEventListener('DOMContentLoaded', function() {
             input.value = ''; // إعادة تعيين الإدخال
         }
 
+        // دالة للكشف عن الفاصل الأكثر احتمالاً في السطر
+        function detectDelimiter(line) {
+            const counts = {
+                ',': (line.match(/,/g) || []).length,
+                ';': (line.match(/;/g) || []).length,
+                '\t': (line.match(/\t/g) || []).length
+            };
+            // اختر الفاصل الأكثر تكراراً
+            const delimiter = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
+            return delimiter;
+        }
+
         // دالة محسنة لتحليل سطر CSV
-        function parseCSVLine(line) {
+        function parseCSVLine(line, delimiter = ',') {
             const result = [];
             let current = '';
             let inQuotes = false;
             let i = 0;
+
+            // إزالة BOM إذا كان موجوداً في البداية
+            if (line.charCodeAt(0) === 0xFEFF) {
+                line = line.slice(1);
+            }
 
             while (i < line.length) {
                 const char = line[i];
@@ -2795,8 +2817,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         inQuotes = !inQuotes;
                         i++;
                     }
-                } else if (char === ',' && !inQuotes) {
-                    // فاصلة خارج الاقتباسات
+                } else if (char === delimiter && !inQuotes) {
+                    // الفاصل خارج الاقتباسات
                     result.push(current.trim());
                     current = '';
                     i++;
