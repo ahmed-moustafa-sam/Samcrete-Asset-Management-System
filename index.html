@@ -961,6 +961,11 @@
                 <span>تصدير CSV</span>
             </button>
             
+            <button class="export-btn" onclick="openCSVConverter()" style="background: linear-gradient(135deg, #7c3aed, #5b21b6);">
+                <i class="fas fa-exchange-alt"></i>
+                <span>تحويل CSV لـ GitHub</span>
+            </button>
+            
             <button class="clear-filters" onclick="clearAllData()" style="background: #ef4444; margin-right: auto;">
                 <i class="fas fa-trash"></i>
                 <span id="clearDataBtnText">تنظيف البيانات</span>
@@ -1480,7 +1485,22 @@
         // ==================== تهيئة البيانات من الملف ====================
         async function initializeData() {
             try {
-                // محاولة تحميل البيانات من localStorage
+                // محاولة تحميل البيانات من ملف JSON في المستودع
+                let repoData = null;
+                try {
+                    repoData = await loadFromRepository();
+                } catch (e) {
+                    console.warn('فشل تحميل البيانات من المستودع:', e);
+                }
+
+                // إذا تم تحميل بيانات من المستودع، فسنستخدمها كبيانات أولية
+                if (Array.isArray(repoData) && repoData.length > 0) {
+                    // حفظ البيانات من المستودع في localStorage كبيانات أولية
+                    localStorage.setItem('repoAssetsData', JSON.stringify(repoData));
+                    console.log('تم تحميل البيانات الأولية من المستودع');
+                }
+
+                // محاولة تحميل البيانات من localStorage (التعديلات المحلية)
                 let savedData = localStorage.getItem('assetsData');
 
                 // إذا كانت البيانات محفوظة خطأً تحت dashboardFilters (بسبب نسخة أقدم من التطبيق)، نقوم بترحيلها
@@ -1509,7 +1529,7 @@
                 if (savedData) {
                     try {
                         const parsedData = JSON.parse(savedData);
-                        console.log('البيانات المحفوظة:', parsedData);
+                        console.log('البيانات المحفوظة محلياً:', parsedData);
                         
                         // التحقق من نوع البيانات المحفوظة
                         let extractedAssetsData = null;
@@ -1525,18 +1545,36 @@
                             assetsData = extractedAssetsData;
                             console.log('تم تحميل البيانات من localStorage');
                         } else {
-                            console.error('البيانات المحفوظة فارغة أو غير صحيحة، سيتم مسحها واستخدام صفحة فارغة');
+                            console.error('البيانات المحفوظة فارغة أو غير صحيحة، سيتم مسحها واستخدام البيانات من المستودع');
                             localStorage.removeItem('assetsData');
-                            assetsData = [];
+                            // استخدم البيانات من المستودع إذا كانت متوفرة
+                            if (Array.isArray(repoData) && repoData.length > 0) {
+                                assetsData = repoData;
+                                localStorage.setItem('assetsData', JSON.stringify(repoData));
+                            } else {
+                                assetsData = [];
+                            }
                         }
                     } catch (e) {
-                        console.error('خطأ في تحليل البيانات المحفوظة، سيتم مسحها واستخدام صفحة فارغة');
+                        console.error('خطأ في تحليل البيانات المحفوظة، سيتم مسحها واستخدام البيانات من المستودع');
                         localStorage.removeItem('assetsData');
-                        assetsData = [];
+                        // استخدم البيانات من المستودع إذا كانت متوفرة
+                        if (Array.isArray(repoData) && repoData.length > 0) {
+                            assetsData = repoData;
+                            localStorage.setItem('assetsData', JSON.stringify(repoData));
+                        } else {
+                            assetsData = [];
+                        }
                     }
                 } else {
-                    // لا توجد بيانات محفوظة، ابدأ بصفحة فارغة
-                    assetsData = [];
+                    // لا توجد بيانات محفوظة محلياً، استخدم البيانات من المستودع
+                    if (Array.isArray(repoData) && repoData.length > 0) {
+                        assetsData = repoData;
+                        localStorage.setItem('assetsData', JSON.stringify(repoData));
+                        console.log('تم تحميل البيانات من المستودع');
+                    } else {
+                        assetsData = [];
+                    }
                 }
                 
                 // تحديد الأعمدة
@@ -2579,6 +2617,31 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // ==================== حفظ وتحميل من localStorage فقط ====================
+        async function loadFromRepository() {
+            try {
+                // التحقق من أن الصفحة تعمل من خادم (ليس file://)
+                if (window.location.protocol === 'file:') {
+                    console.warn('الصفحة مفتوحة محلياً - سيتم استخدام البيانات المحفوظة محلياً فقط');
+                    return null;
+                }
+
+                // قراءة من ملف assets.json في نفس المجلد
+                const response = await fetch('./assets.json', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const json = await response.json();
+                if (Array.isArray(json)) return json;
+                return null;
+            } catch (e) {
+                console.warn('loadFromRepository: تعذر تحميل البيانات من المستودع - سيتم استخدام البيانات المحلية:', e.message);
+                return null;
+            }
+        }
+
         function saveToLocalStorage() {
             localStorage.setItem('assetsData', JSON.stringify(assetsData));
             updateLastUpdate();
@@ -2599,6 +2662,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
+        // ==================== فتح أداة التحويل ====================
+        function openCSVConverter() {
+            window.open('csv-to-json.html', '_blank');
+        }
+
         // ==================== تصدير إلى Excel ====================
         function exportToExcel() {
             const worksheet = XLSX.utils.json_to_sheet(filteredData);
@@ -2607,15 +2675,24 @@ document.addEventListener('DOMContentLoaded', function() {
             XLSX.writeFile(workbook, `samcrete_assets_${new Date().toISOString().slice(0,10)}.xlsx`);
         }
 
-        // ==================== تصدير إلى CSV ====================
+        // ==================== تصدير إلى CSV UTF-8 ====================
         function exportToCSV() {
             const headers = Object.keys(filteredData[0] || {});
             const csvContent = [
                 headers.join(','),
-                ...filteredData.map(row => headers.map(h => `"${(row[h] || '').toString().replace(/"/g, '""')}"`).join(','))
-            ].join('\n');
+                ...filteredData.map(row => headers.map(h => {
+                    const value = (row[h] || '').toString();
+                    // إذا كان القيمة تحتوي على فاصلة أو علامات تنصيص، ضعها بين علامات تنصيص
+                    if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+                        return `"${value.replace(/"/g, '""')}"`;
+                    }
+                    return value;
+                }).join(','))
+            ].join('\r\n');
             
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            // إضافة BOM للترميز UTF-8
+            const BOM = '\uFEFF';
+            const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
             link.download = `samcrete_assets_${new Date().toISOString().slice(0,10)}.csv`;
