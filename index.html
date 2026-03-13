@@ -2708,7 +2708,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
 
                 if (!getResponse.ok) {
-                    throw new Error('فشل في الوصول إلى الملف على GitHub');
+                    if (getResponse.status === 404) {
+                        throw new Error('الملف غير موجود على GitHub. يرجى إنشاء الملف الأولي أولاً من إعدادات GitHub.');
+                    } else {
+                        throw new Error('فشل في الوصول إلى الملف على GitHub');
+                    }
                 }
 
                 const fileData = await getResponse.json();
@@ -2753,14 +2757,94 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
+        // ==================== إنشاء ملف assets.json الأولي على GitHub ====================
+        async function createInitialGitHubFile() {
+            if (!confirm('هل تريد إنشاء ملف assets.json الأولي على GitHub؟\n\nسيتم رفع البيانات الحالية إلى المستودع.')) {
+                return;
+            }
+
+            showAlert('جاري إنشاء الملف على GitHub...', 'info');
+
+            try {
+                const token = localStorage.getItem('github_token');
+                if (!token) {
+                    alert('يرجى إعداد رمز الوصول أولاً من إعدادات GitHub');
+                    setupGitHubSettings();
+                    return;
+                }
+
+                const repoOwner = localStorage.getItem('github_owner') || 'AhmedIbrahimMoustafa';
+                const repoName = localStorage.getItem('github_repo') || 'samcrete-assets';
+                const filePath = 'assets.json';
+
+                // تحضير البيانات الجديدة
+                const newContent = JSON.stringify(assetsData, null, 2);
+                const encodedContent = btoa(unescape(encodeURIComponent(newContent)));
+
+                // التحقق من وجود الملف أولاً
+                const checkResponse = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`, {
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+
+                if (checkResponse.ok) {
+                    if (!confirm('الملف موجود بالفعل على GitHub. هل تريد استبداله بالبيانات الحالية؟')) {
+                        return;
+                    }
+                } else if (checkResponse.status !== 404) {
+                    throw new Error('فشل في التحقق من وجود الملف');
+                }
+
+                // إنشاء الملف الجديد
+                const response = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: `إنشاء ملف البيانات الأولي - ${new Date().toLocaleString('ar-EG')}`,
+                        content: encodedContent
+                    })
+                });
+
+                if (response.ok) {
+                    showAlert('تم إنشاء ملف assets.json على GitHub بنجاح!', 'success');
+                    updateLastUpdate();
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'فشل في إنشاء الملف');
+                }
+
+            } catch (error) {
+                console.error('خطأ في إنشاء الملف:', error);
+                showAlert('فشل في إنشاء الملف: ' + error.message, 'error');
+
+                if (error.message.includes('Bad credentials')) {
+                    localStorage.removeItem('github_token');
+                    alert('رمز الوصول غير صالح. يرجى إدخاله مرة أخرى.');
+                } else if (error.message.includes('Not Found')) {
+                    alert('المستودع غير موجود. تأكد من:\n1. اسم المستخدم الصحيح\n2. اسم المستودع الصحيح\n3. أن المستودع عام (public)');
+                }
+            }
+        }
+
         // ==================== إعدادات GitHub ====================
         function setupGitHubSettings() {
-            const currentToken = localStorage.getItem('github_token') ? '***' + localStorage.getItem('github_token').slice(-4) : 'غير محدد';
             const autoSaveEnabled = localStorage.getItem('github_auto_save') === 'true';
 
             const settingsHtml = `
                 <div style="text-align: right; direction: rtl; padding: 20px; background: #f8f9fa; border-radius: 10px;">
-                    <h4 style="color: #1e3c72; margin-bottom: 20px;">إعدادات GitHub</h4>
+                    <div style="margin-bottom: 20px; padding: 15px; background: #e9ecef; border-radius: 5px; border-right: 4px solid #1e3c72;">
+                        <h5 style="margin: 0 0 10px 0; color: #1e3c72;">📁 إنشاء ملف البيانات الأولي</h5>
+                        <p style="margin: 0; font-size: 14px; color: #495057;">
+                            إذا كان هذا أول استخدام للنظام، يجب إنشاء ملف <strong>assets.json</strong> على GitHub أولاً.
+                            استخدم زر "إنشاء ملف أولي" لحفظ البيانات الحالية كملف أولي.
+                        </p>
+                    </div>
 
                     <div style="margin-bottom: 15px;">
                         <label style="display: block; margin-bottom: 5px; font-weight: bold;">رمز الوصول الشخصي:</label>
@@ -2789,6 +2873,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
 
                     <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button onclick="createInitialGitHubFile()" style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">إنشاء ملف أولي</button>
                         <button onclick="this.parentNode.parentNode.parentNode.remove()" style="padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">إلغاء</button>
                         <button onclick="saveGitHubSettings()" style="padding: 8px 16px; background: #1e3c72; color: white; border: none; border-radius: 5px; cursor: pointer;">حفظ الإعدادات</button>
                     </div>
