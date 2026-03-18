@@ -3988,7 +3988,7 @@
         }
 
         async function selectOneDriveFile(fileId, fileName, driveId) {
-            if (!confirm(`هل تريد ربط الملف "${escapeHtml(fileName)}"؟\nسيتم تحميل بيانات هذا الملف وعرضها.`)) return;
+            if (!confirm(`هل تريد ربط الملف "${fileName}"؟\nسيتم تحميل بيانات هذا الملف وعرضها.`)) return;
             
             oneDriveConfig.fileId = fileId;
             oneDriveConfig.fileName = fileName;
@@ -4011,7 +4011,7 @@
             }
             
             updateOneDriveUI();
-            showAlert(`تم ربط الملف "${escapeHtml(fileName)}" بنجاح`, 'success');
+            showAlert(`تم ربط الملف "${fileName}" بنجاح`, 'success');
             
             // Start auto sync if enabled
             if (oneDriveConfig.autoSync) {
