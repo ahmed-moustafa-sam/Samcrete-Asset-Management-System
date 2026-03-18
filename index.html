@@ -3577,6 +3577,10 @@
         }
 
         // ==================== OneDrive Integration ====================
+        function escapeHtml(str) {
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
         let msalInstance = null;
         let oneDriveAccessToken = null;
         let oneDriveConfig = {
@@ -3909,26 +3913,50 @@
                 }
                 
                 if (fileListEl) {
-                    fileListEl.innerHTML = items.map(item => {
+                    fileListEl.innerHTML = '';
+                    items.forEach(item => {
                         const isFolder = !!item.folder;
                         const icon = isFolder ? 'fa-folder' : (item.name.toLowerCase().endsWith('.csv') ? 'fa-file-csv' : 'fa-file-excel');
                         const iconColor = isFolder ? '#f59e0b' : '#10b981';
                         const size = item.size ? formatFileSize(item.size) : '';
                         const modified = item.lastModifiedDateTime ? new Date(item.lastModifiedDateTime).toLocaleString('ar-EG') : '';
                         
-                        return `
-                            <div onclick="${isFolder ? `navigateOneDriveFolder('${item.id}', '${item.name.replace(/'/g, "\\'")}')` : `selectOneDriveFile('${item.id}', '${item.name.replace(/'/g, "\\'")}', '${item.parentReference?.driveId || ''}')`}" 
-                                 style="padding: 12px 15px; border-bottom: 1px solid #f0f0f0; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: background 0.2s;"
-                                 onmouseover="this.style.background='#f0f9ff'" onmouseout="this.style.background='transparent'">
-                                <i class="fas ${icon}" style="font-size: 1.5em; color: ${iconColor}; width: 30px; text-align: center;"></i>
-                                <div style="flex: 1;">
-                                    <div style="font-weight: 600; color: #333;">${item.name}</div>
-                                    <div style="font-size: 0.8em; color: #888;">${size}${size && modified ? ' • ' : ''}${modified}</div>
-                                </div>
-                                ${isFolder ? '<i class="fas fa-chevron-left" style="color: #ccc;"></i>' : '<i class="fas fa-link" style="color: #0078d4;"></i>'}
-                            </div>
-                        `;
-                    }).join('');
+                        const row = document.createElement('div');
+                        row.style.cssText = 'padding: 12px 15px; border-bottom: 1px solid #f0f0f0; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: background 0.2s;';
+                        row.addEventListener('mouseover', () => row.style.background = '#f0f9ff');
+                        row.addEventListener('mouseout', () => row.style.background = 'transparent');
+                        row.addEventListener('click', () => {
+                            if (isFolder) {
+                                navigateOneDriveFolder(item.id, item.name);
+                            } else {
+                                selectOneDriveFile(item.id, item.name, item.parentReference?.driveId || '');
+                            }
+                        });
+                        
+                        const iconEl = document.createElement('i');
+                        iconEl.className = `fas ${icon}`;
+                        iconEl.style.cssText = `font-size: 1.5em; color: ${iconColor}; width: 30px; text-align: center;`;
+                        row.appendChild(iconEl);
+                        
+                        const infoDiv = document.createElement('div');
+                        infoDiv.style.flex = '1';
+                        const nameDiv = document.createElement('div');
+                        nameDiv.style.cssText = 'font-weight: 600; color: #333;';
+                        nameDiv.textContent = item.name;
+                        infoDiv.appendChild(nameDiv);
+                        const metaDiv = document.createElement('div');
+                        metaDiv.style.cssText = 'font-size: 0.8em; color: #888;';
+                        metaDiv.textContent = `${size}${size && modified ? ' \u2022 ' : ''}${modified}`;
+                        infoDiv.appendChild(metaDiv);
+                        row.appendChild(infoDiv);
+                        
+                        const trailIcon = document.createElement('i');
+                        trailIcon.className = isFolder ? 'fas fa-chevron-left' : 'fas fa-link';
+                        trailIcon.style.color = isFolder ? '#ccc' : '#0078d4';
+                        row.appendChild(trailIcon);
+                        
+                        fileListEl.appendChild(row);
+                    });
                 }
             } catch (e) {
                 console.error('خطأ في عرض ملفات OneDrive:', e);
@@ -3960,7 +3988,7 @@
         }
 
         async function selectOneDriveFile(fileId, fileName, driveId) {
-            if (!confirm(`هل تريد ربط الملف "${fileName}"؟\nسيتم تحميل بيانات هذا الملف وعرضها.`)) return;
+            if (!confirm(`هل تريد ربط الملف "${escapeHtml(fileName)}"؟\nسيتم تحميل بيانات هذا الملف وعرضها.`)) return;
             
             oneDriveConfig.fileId = fileId;
             oneDriveConfig.fileName = fileName;
@@ -3975,10 +4003,15 @@
             updateFileStatus();
             
             // Download and display the file
-            await syncFromOneDrive();
+            try {
+                await syncFromOneDrive();
+            } catch (e) {
+                console.error('خطأ في تحميل ملف OneDrive:', e);
+                showAlert('فشل تحميل الملف: ' + e.message, 'error');
+            }
             
             updateOneDriveUI();
-            showAlert(`تم ربط الملف "${fileName}" بنجاح`, 'success');
+            showAlert(`تم ربط الملف "${escapeHtml(fileName)}" بنجاح`, 'success');
             
             // Start auto sync if enabled
             if (oneDriveConfig.autoSync) {
@@ -3989,56 +4022,50 @@
         async function syncFromOneDrive() {
             if (!oneDriveConfig.fileId) {
                 showAlert('لا يوجد ملف متصل', 'error');
-                return;
+                throw new Error('لا يوجد ملف متصل');
             }
             
-            try {
-                showAlert('جاري تحميل البيانات من OneDrive...', 'info');
-                
-                // Ensure we have a valid token
-                if (!oneDriveAccessToken) {
-                    const token = await acquireTokenSilent();
-                    if (!token) {
-                        showAlert('يرجى تسجيل الدخول أولاً', 'error');
-                        return;
-                    }
+            showAlert('جاري تحميل البيانات من OneDrive...', 'info');
+            
+            // Ensure we have a valid token
+            if (!oneDriveAccessToken) {
+                const token = await acquireTokenSilent();
+                if (!token) {
+                    showAlert('يرجى تسجيل الدخول أولاً', 'error');
+                    throw new Error('يرجى تسجيل الدخول أولاً');
                 }
-                
-                // Download file content
-                const downloadUrl = `https://graph.microsoft.com/v1.0/me/drive/items/${oneDriveConfig.fileId}/content`;
-                const response = await fetch(downloadUrl, {
-                    headers: { 'Authorization': `Bearer ${oneDriveAccessToken}` }
-                });
-                
-                if (response.status === 401) {
-                    const newToken = await acquireTokenSilent();
-                    if (!newToken) {
-                        showAlert('انتهت الجلسة، يرجى تسجيل الدخول مرة أخرى', 'error');
-                        return;
-                    }
-                    const retryResponse = await fetch(downloadUrl, {
-                        headers: { 'Authorization': `Bearer ${newToken}` }
-                    });
-                    if (!retryResponse.ok) throw new Error('فشل تحميل الملف');
-                    await processOneDriveFileResponse(retryResponse);
-                } else if (!response.ok) {
-                    throw new Error('فشل تحميل الملف: ' + response.status);
-                } else {
-                    await processOneDriveFileResponse(response);
-                }
-                
-                oneDriveConfig.lastSync = new Date().toISOString();
-                saveOneDriveConfigToStorage();
-                showOneDriveConnectedFile();
-                
-                sourceFile.lastSync = new Date();
-                saveSourceFileInfo();
-                updateFileStatus();
-                
-            } catch (e) {
-                console.error('خطأ في تحميل ملف OneDrive:', e);
-                showAlert('فشل تحميل الملف: ' + e.message, 'error');
             }
+            
+            // Download file content
+            const downloadUrl = `https://graph.microsoft.com/v1.0/me/drive/items/${oneDriveConfig.fileId}/content`;
+            const response = await fetch(downloadUrl, {
+                headers: { 'Authorization': `Bearer ${oneDriveAccessToken}` }
+            });
+            
+            if (response.status === 401) {
+                const newToken = await acquireTokenSilent();
+                if (!newToken) {
+                    showAlert('انتهت الجلسة، يرجى تسجيل الدخول مرة أخرى', 'error');
+                    throw new Error('انتهت الجلسة، يرجى تسجيل الدخول مرة أخرى');
+                }
+                const retryResponse = await fetch(downloadUrl, {
+                    headers: { 'Authorization': `Bearer ${newToken}` }
+                });
+                if (!retryResponse.ok) throw new Error('فشل تحميل الملف');
+                await processOneDriveFileResponse(retryResponse);
+            } else if (!response.ok) {
+                throw new Error('فشل تحميل الملف: ' + response.status);
+            } else {
+                await processOneDriveFileResponse(response);
+            }
+            
+            oneDriveConfig.lastSync = new Date().toISOString();
+            saveOneDriveConfigToStorage();
+            showOneDriveConnectedFile();
+            
+            sourceFile.lastSync = new Date();
+            saveSourceFileInfo();
+            updateFileStatus();
         }
 
         async function processOneDriveFileResponse(response) {
@@ -4079,75 +4106,70 @@
         async function syncToOneDrive() {
             if (!oneDriveConfig.fileId) {
                 showAlert('لا يوجد ملف متصل', 'error');
-                return;
+                throw new Error('لا يوجد ملف متصل');
             }
             
-            try {
-                showAlert('جاري رفع التغييرات إلى OneDrive...', 'info');
-                
-                if (!oneDriveAccessToken) {
-                    const token = await acquireTokenSilent();
-                    if (!token) {
-                        showAlert('يرجى تسجيل الدخول أولاً', 'error');
-                        return;
-                    }
+            showAlert('جاري رفع التغييرات إلى OneDrive...', 'info');
+            
+            if (!oneDriveAccessToken) {
+                const token = await acquireTokenSilent();
+                if (!token) {
+                    showAlert('يرجى تسجيل الدخول أولاً', 'error');
+                    throw new Error('يرجى تسجيل الدخول أولاً');
                 }
-                
-                // Create Excel workbook from current data
-                const dataToExport = assetsData.map(asset => {
-                    const row = { ...asset };
-                    delete row.id;
-                    return row;
-                });
-                
-                const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-                const workbook = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(workbook, worksheet, 'Assets');
-                const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-                
-                // Upload to OneDrive (replace existing file)
-                const uploadUrl = `https://graph.microsoft.com/v1.0/me/drive/items/${oneDriveConfig.fileId}/content`;
-                const uploadResponse = await fetch(uploadUrl, {
+            }
+            
+            // Create Excel workbook from current data
+            const dataToExport = assetsData.map(asset => {
+                const row = { ...asset };
+                delete row.id;
+                return row;
+            });
+            
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Assets');
+            const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+            
+            // Upload to OneDrive (replace existing file)
+            const uploadUrl = `https://graph.microsoft.com/v1.0/me/drive/items/${oneDriveConfig.fileId}/content`;
+            const uploadResponse = await fetch(uploadUrl, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${oneDriveAccessToken}`,
+                    'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                },
+                body: wbout
+            });
+            
+            if (uploadResponse.status === 401) {
+                const newToken = await acquireTokenSilent();
+                if (!newToken) {
+                    showAlert('انتهت الجلسة، يرجى تسجيل الدخول مرة أخرى', 'error');
+                    throw new Error('انتهت الجلسة، يرجى تسجيل الدخول مرة أخرى');
+                }
+                const retryResponse = await fetch(uploadUrl, {
                     method: 'PUT',
                     headers: {
-                        'Authorization': `Bearer ${oneDriveAccessToken}`,
+                        'Authorization': `Bearer ${newToken}`,
                         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                     },
                     body: wbout
                 });
-                
-                if (uploadResponse.status === 401) {
-                    const newToken = await acquireTokenSilent();
-                    if (!newToken) {
-                        showAlert('انتهت الجلسة، يرجى تسجيل الدخول مرة أخرى', 'error');
-                        return;
-                    }
-                    const retryResponse = await fetch(uploadUrl, {
-                        method: 'PUT',
-                        headers: {
-                            'Authorization': `Bearer ${newToken}`,
-                            'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                        },
-                        body: wbout
-                    });
-                    if (!retryResponse.ok) throw new Error('فشل رفع الملف');
-                } else if (!uploadResponse.ok) {
-                    throw new Error('فشل رفع الملف: ' + uploadResponse.status);
-                }
-                
-                oneDriveConfig.lastSync = new Date().toISOString();
-                saveOneDriveConfigToStorage();
-                showOneDriveConnectedFile();
-                
-                sourceFile.lastSync = new Date();
-                saveSourceFileInfo();
-                updateFileStatus();
-                
-                showAlert('تم رفع التغييرات إلى OneDrive بنجاح', 'success');
-            } catch (e) {
-                console.error('خطأ في رفع التغييرات إلى OneDrive:', e);
-                showAlert('فشل رفع التغييرات: ' + e.message, 'error');
+                if (!retryResponse.ok) throw new Error('فشل رفع الملف');
+            } else if (!uploadResponse.ok) {
+                throw new Error('فشل رفع الملف: ' + uploadResponse.status);
             }
+            
+            oneDriveConfig.lastSync = new Date().toISOString();
+            saveOneDriveConfigToStorage();
+            showOneDriveConnectedFile();
+            
+            sourceFile.lastSync = new Date();
+            saveSourceFileInfo();
+            updateFileStatus();
+            
+            showAlert('تم رفع التغييرات إلى OneDrive بنجاح', 'success');
         }
 
         function disconnectOneDrive() {
@@ -4177,7 +4199,10 @@
             oneDriveAutoSyncInterval = setInterval(() => {
                 if (oneDriveConfig.fileId && oneDriveAccessToken) {
                     console.log('OneDrive auto-sync triggered');
-                    syncToOneDrive().catch(e => console.error('فشل المزامنة التلقائية:', e));
+                    syncToOneDrive().catch(e => {
+                        console.error('فشل المزامنة التلقائية:', e);
+                        showAlert('فشل المزامنة التلقائية: ' + e.message, 'error');
+                    });
                 }
             }, 300000); // 5 minutes
         }
