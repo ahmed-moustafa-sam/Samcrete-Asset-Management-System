@@ -1342,10 +1342,10 @@
                                     <small id="connectedOneDriveLastSync" style="color: #666;">آخر مزامنة: --</small>
                                 </div>
                                 <div style="display: flex; gap: 8px;">
-                                    <button onclick="syncFromOneDrive()" style="padding: 8px 16px; background: #0078d4; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                                    <button onclick="syncFromOneDrive().catch(e => showAlert('فشل سحب البيانات: ' + e.message, 'error'))" style="padding: 8px 16px; background: #0078d4; color: white; border: none; border-radius: 8px; cursor: pointer;">
                                         <i class="fas fa-download"></i> سحب البيانات
                                     </button>
-                                    <button onclick="syncToOneDrive()" style="padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                                    <button onclick="syncToOneDrive().catch(e => showAlert('فشل رفع التغييرات: ' + e.message, 'error'))" style="padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 8px; cursor: pointer;">
                                         <i class="fas fa-upload"></i> رفع التغييرات
                                     </button>
                                     <button onclick="disconnectOneDrive()" style="padding: 8px 16px; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer;">
@@ -4133,33 +4133,44 @@
             
             // Upload to OneDrive (replace existing file)
             const uploadUrl = `https://graph.microsoft.com/v1.0/me/drive/items/${oneDriveConfig.fileId}/content`;
-            const uploadResponse = await fetch(uploadUrl, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${oneDriveAccessToken}`,
-                    'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                },
-                body: wbout
-            });
             
-            if (uploadResponse.status === 401) {
-                const newToken = await acquireTokenSilent();
-                if (!newToken) {
-                    showAlert('انتهت الجلسة، يرجى تسجيل الدخول مرة أخرى', 'error');
-                    throw new Error('انتهت الجلسة، يرجى تسجيل الدخول مرة أخرى');
-                }
-                const retryResponse = await fetch(uploadUrl, {
+            async function attemptUpload(token, retryCount = 0) {
+                const response = await fetch(uploadUrl, {
                     method: 'PUT',
                     headers: {
-                        'Authorization': `Bearer ${newToken}`,
+                        'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                     },
                     body: wbout
                 });
-                if (!retryResponse.ok) throw new Error('فشل رفع الملف');
-            } else if (!uploadResponse.ok) {
-                throw new Error('فشل رفع الملف: ' + uploadResponse.status);
+                
+                if (response.status === 423) {
+                    // File is locked (open in Excel Online or desktop)
+                    if (retryCount < 3) {
+                        const waitSec = (retryCount + 1) * 5;
+                        showAlert(`الملف مفتوح حالياً في تطبيق آخر. إعادة المحاولة بعد ${waitSec} ثوانٍ... (${retryCount + 1}/3)`, 'info');
+                        await new Promise(resolve => setTimeout(resolve, waitSec * 1000));
+                        return attemptUpload(token, retryCount + 1);
+                    }
+                    throw new Error('الملف مقفل - يرجى إغلاق الملف من Excel أو Excel Online ثم المحاولة مرة أخرى');
+                }
+                
+                if (response.status === 401) {
+                    const newToken = await acquireTokenSilent();
+                    if (!newToken) {
+                        throw new Error('انتهت الجلسة، يرجى تسجيل الدخول مرة أخرى');
+                    }
+                    return attemptUpload(newToken, retryCount);
+                }
+                
+                if (!response.ok) {
+                    throw new Error('فشل رفع الملف: ' + response.status);
+                }
+                
+                return response;
             }
+            
+            await attemptUpload(oneDriveAccessToken);
             
             oneDriveConfig.lastSync = new Date().toISOString();
             saveOneDriveConfigToStorage();
