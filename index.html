@@ -14,6 +14,9 @@
     <!-- JS Barcode لطباعة الباركود -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     
+    <!-- MSAL.js for Microsoft Authentication -->
+    <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
+    
     <!-- Font Awesome للأيقونات -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
@@ -1240,39 +1243,159 @@
     </div>
 
     <div class="modal" id="onlineSheetModal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 700px;">
             <div class="modal-header">
                 <h2>ملفات أونلاين</h2>
                 <button class="modal-close" onclick="closeOnlineSheetModal()">&times;</button>
             </div>
             
             <div style="padding: 20px;">
-                <div class="form-group">
-                    <label class="form-label">رابط ملف Google Sheets</label>
-                    <input type="text" id="googleSheetUrl" class="form-input" placeholder="https://docs.google.com/spreadsheets/d/...">
+                <!-- Tab Navigation -->
+                <div style="display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid #e0e7ff;">
+                    <button id="tabOneDrive" onclick="switchOnlineTab('onedrive')" style="flex:1; padding: 12px 20px; border: none; background: linear-gradient(135deg, #0078d4, #106ebe); color: white; font-weight: 600; font-size: 1em; cursor: pointer; border-radius: 10px 10px 0 0; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <i class="fab fa-microsoft"></i> Microsoft OneDrive
+                    </button>
+                    <button id="tabGoogleSheets" onclick="switchOnlineTab('google')" style="flex:1; padding: 12px 20px; border: none; background: #f0f0f0; color: #666; font-weight: 600; font-size: 1em; cursor: pointer; border-radius: 10px 10px 0 0; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <i class="fab fa-google"></i> Google Sheets
+                    </button>
                 </div>
-                
-                <div class="form-group">
-                    <label class="form-label">اسم الملف</label>
-                    <input type="text" id="sheetName" class="form-input" placeholder="مثال: بيانات الفروع">
+
+                <!-- OneDrive Tab Content -->
+                <div id="oneDriveTabContent">
+                    <!-- Step 1: App Configuration -->
+                    <div id="oneDriveSetup">
+                        <div style="background: linear-gradient(135deg, #e8f4fd, #d1ecf9); padding: 15px; border-radius: 12px; margin-bottom: 15px; border-right: 4px solid #0078d4;">
+                            <h4 style="color: #0078d4; margin-bottom: 8px;"><i class="fas fa-info-circle"></i> إعداد الاتصال بـ OneDrive</h4>
+                            <p style="font-size: 0.9em; color: #333; line-height: 1.6;">للربط مع OneDrive تحتاج إلى تسجيل تطبيق في Azure:</p>
+                            <ol style="font-size: 0.85em; color: #555; padding-right: 20px; line-height: 1.8;">
+                                <li>اذهب إلى <a href="https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank" style="color: #0078d4;">Azure App Registrations</a></li>
+                                <li>اضغط "New registration" → أدخل اسم التطبيق</li>
+                                <li>اختر "Accounts in any organizational directory and personal Microsoft accounts"</li>
+                                <li>Redirect URI: اختر "Single-page application (SPA)" وأدخل عنوان موقعك</li>
+                                <li>انسخ الـ Application (client) ID</li>
+                            </ol>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label"><i class="fas fa-key" style="color: #0078d4;"></i> Application (Client) ID</label>
+                            <input type="text" id="oneDriveClientId" class="form-input" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" style="direction: ltr; text-align: left;">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label"><i class="fas fa-globe" style="color: #0078d4;"></i> Redirect URI</label>
+                            <input type="text" id="oneDriveRedirectUri" class="form-input" placeholder="https://your-site.com/index.html" style="direction: ltr; text-align: left;">
+                            <small style="color: #888;">يجب أن يتطابق مع الـ Redirect URI المسجل في Azure</small>
+                        </div>
+
+                        <button onclick="saveOneDriveConfig()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #0078d4, #106ebe); color: white; border: none; border-radius: 10px; font-size: 1em; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px;">
+                            <i class="fas fa-save"></i> حفظ الإعدادات
+                        </button>
+                    </div>
+
+                    <!-- Step 2: Sign In -->
+                    <div id="oneDriveAuth" style="margin-top: 15px;">
+                        <div id="oneDriveSignInSection">
+                            <button id="oneDriveSignInBtn" onclick="signInToOneDrive()" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #0078d4, #106ebe); color: white; border: none; border-radius: 12px; font-size: 1.05em; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.3s;">
+                                <i class="fab fa-microsoft"></i> تسجيل الدخول بحساب Microsoft
+                            </button>
+                        </div>
+                        <div id="oneDriveUserInfo" style="display: none; background: #f0f9ff; padding: 15px; border-radius: 12px; margin-top: 10px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <i class="fas fa-user-circle" style="font-size: 2em; color: #0078d4;"></i>
+                                    <div>
+                                        <strong id="oneDriveUserName">المستخدم</strong><br>
+                                        <small id="oneDriveUserEmail" style="color: #666;">email@example.com</small>
+                                    </div>
+                                </div>
+                                <button onclick="signOutFromOneDrive()" style="padding: 8px 16px; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9em;">
+                                    <i class="fas fa-sign-out-alt"></i> خروج
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: File Browser -->
+                    <div id="oneDriveFileBrowser" style="display: none; margin-top: 15px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                            <h4 style="color: #1e3c72;"><i class="fas fa-folder-open"></i> ملفات OneDrive</h4>
+                            <div style="display: flex; gap: 8px;">
+                                <button id="oneDriveBackBtn" onclick="navigateOneDriveBack()" style="padding: 6px 12px; background: #e0e7ff; border: none; border-radius: 8px; cursor: pointer; display: none;">
+                                    <i class="fas fa-arrow-right"></i> رجوع
+                                </button>
+                                <button onclick="refreshOneDriveFiles()" style="padding: 6px 12px; background: #e0e7ff; border: none; border-radius: 8px; cursor: pointer;">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="oneDrivePath" style="font-size: 0.85em; color: #888; margin-bottom: 8px;">/ الجذر</div>
+                        <div id="oneDriveFileList" style="max-height: 300px; overflow-y: auto; border: 1px solid #e0e7ff; border-radius: 10px;"></div>
+                    </div>
+
+                    <!-- Step 4: Connected File Info -->
+                    <div id="oneDriveConnectedFile" style="display: none; margin-top: 15px;">
+                        <div style="background: linear-gradient(135deg, #ecfdf5, #d1fae5); padding: 15px; border-radius: 12px; border-right: 4px solid #10b981;">
+                            <h4 style="color: #059669; margin-bottom: 10px;"><i class="fas fa-link"></i> ملف متصل</h4>
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div>
+                                    <strong id="connectedOneDriveFileName">filename.xlsx</strong><br>
+                                    <small id="connectedOneDriveLastSync" style="color: #666;">آخر مزامنة: --</small>
+                                </div>
+                                <div style="display: flex; gap: 8px;">
+                                    <button onclick="syncFromOneDrive()" style="padding: 8px 16px; background: #0078d4; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                                        <i class="fas fa-download"></i> سحب البيانات
+                                    </button>
+                                    <button onclick="syncToOneDrive()" style="padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                                        <i class="fas fa-upload"></i> رفع التغييرات
+                                    </button>
+                                    <button onclick="disconnectOneDrive()" style="padding: 8px 16px; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                                        <i class="fas fa-unlink"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group" style="margin-top: 10px;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" id="oneDriveAutoSync" checked onchange="toggleOneDriveAutoSync()">
+                                <span>المزامنة التلقائية كل 5 دقائق</span>
+                            </label>
+                        </div>
+                    </div>
                 </div>
-                
-                <div class="form-group">
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                        <input type="checkbox" id="autoSync" checked>
-                        <span>المزامنة التلقائية كل 5 دقائق</span>
-                    </label>
-                </div>
-                
-                <div id="onlineSheetsList" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e7ff;">
-                    <h4>الملفات المتصلة</h4>
-                    <div id="connectedSheets"></div>
+
+                <!-- Google Sheets Tab Content (existing) -->
+                <div id="googleSheetsTabContent" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label">رابط ملف Google Sheets</label>
+                        <input type="text" id="googleSheetUrl" class="form-input" placeholder="https://docs.google.com/spreadsheets/d/...">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">اسم الملف</label>
+                        <input type="text" id="sheetName" class="form-input" placeholder="مثال: بيانات الفروع">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="autoSync" checked>
+                            <span>المزامنة التلقائية كل 5 دقائق</span>
+                        </label>
+                    </div>
+                    
+                    <div id="onlineSheetsList" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e7ff;">
+                        <h4>الملفات المتصلة</h4>
+                        <div id="connectedSheets"></div>
+                    </div>
+                    
+                    <div style="margin-top: 15px; text-align: left;">
+                        <button class="btn-primary" onclick="connectOnlineSheet()" style="padding: 10px 25px;">اتصل</button>
+                    </div>
                 </div>
             </div>
             
             <div class="modal-footer">
                 <button class="btn-secondary" onclick="closeOnlineSheetModal()">إغلاق</button>
-                <button class="btn-primary" onclick="connectOnlineSheet()">اتصل</button>
             </div>
         </div>
     </div>
@@ -1625,6 +1748,12 @@
                 iconEl.className = 'fas fa-file-excel';
                 textEl.textContent = `File: ${sourceFile.name || 'ملف محلي'}`;
                 sourceInfoEl.innerHTML = `<i class="fas fa-link"></i> المصدر: ${sourceFile.name}`;
+            } else if (sourceFile.type === 'onedrive') {
+                statusEl.className = 'file-status online';
+                statusEl.style.background = 'rgba(0, 120, 212, 0.3)';
+                iconEl.className = 'fab fa-microsoft';
+                textEl.textContent = `OneDrive: ${sourceFile.name || 'ملف OneDrive'}`;
+                sourceInfoEl.innerHTML = `<i class="fab fa-microsoft"></i> المصدر: OneDrive - ${sourceFile.name}`;
             } else if (sourceFile.type === 'online') {
                 statusEl.className = 'file-status online';
                 iconEl.className = 'fas fa-cloud';
@@ -1681,6 +1810,8 @@
             try {
                 if (sourceFile.type === 'local') {
                     await syncWithLocalFile();
+                } else if (sourceFile.type === 'onedrive') {
+                    await syncToOneDrive();
                 } else if (sourceFile.type === 'online') {
                     showAlert('المزامنة مع الملفات الأونلاين تحتاج إلى رابط تحميل مباشر. سيتم تنزيل الملف.', 'info');
                     exportToExcel();
@@ -3445,8 +3576,668 @@
             closeColumnSettings();
         }
 
+        // ==================== OneDrive Integration ====================
+        let msalInstance = null;
+        let oneDriveAccessToken = null;
+        let oneDriveConfig = {
+            clientId: null,
+            redirectUri: null,
+            fileId: null,
+            fileName: null,
+            driveId: null,
+            lastSync: null,
+            autoSync: true
+        };
+        let oneDriveAutoSyncInterval = null;
+        let oneDriveFolderStack = []; // navigation history for file browser
+
+        function loadOneDriveConfig() {
+            const saved = localStorage.getItem('oneDriveConfig');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    Object.assign(oneDriveConfig, parsed);
+                } catch (e) {
+                    console.error('خطأ في تحميل إعدادات OneDrive:', e);
+                }
+            }
+            // Populate UI fields
+            const clientIdEl = document.getElementById('oneDriveClientId');
+            const redirectEl = document.getElementById('oneDriveRedirectUri');
+            if (clientIdEl && oneDriveConfig.clientId) clientIdEl.value = oneDriveConfig.clientId;
+            if (redirectEl && oneDriveConfig.redirectUri) {
+                redirectEl.value = oneDriveConfig.redirectUri;
+            } else if (redirectEl) {
+                redirectEl.value = window.location.href.split('?')[0].split('#')[0];
+            }
+            
+            if (oneDriveConfig.clientId) {
+                initMsal();
+            }
+            
+            updateOneDriveUI();
+        }
+
+        function saveOneDriveConfigToStorage() {
+            localStorage.setItem('oneDriveConfig', JSON.stringify(oneDriveConfig));
+        }
+
+        function saveOneDriveConfig() {
+            const clientId = document.getElementById('oneDriveClientId')?.value.trim();
+            const redirectUri = document.getElementById('oneDriveRedirectUri')?.value.trim();
+            
+            if (!clientId) {
+                showAlert('يرجى إدخال Client ID', 'error');
+                return;
+            }
+            if (!redirectUri) {
+                showAlert('يرجى إدخال Redirect URI', 'error');
+                return;
+            }
+
+            oneDriveConfig.clientId = clientId;
+            oneDriveConfig.redirectUri = redirectUri;
+            saveOneDriveConfigToStorage();
+            
+            initMsal();
+            showAlert('تم حفظ إعدادات OneDrive بنجاح', 'success');
+        }
+
+        function initMsal() {
+            if (!oneDriveConfig.clientId) return;
+            
+            try {
+                const msalConfig = {
+                    auth: {
+                        clientId: oneDriveConfig.clientId,
+                        authority: 'https://login.microsoftonline.com/common',
+                        redirectUri: oneDriveConfig.redirectUri || window.location.href.split('?')[0].split('#')[0]
+                    },
+                    cache: {
+                        cacheLocation: 'localStorage',
+                        storeAuthStateInCookie: false
+                    }
+                };
+                
+                msalInstance = new msal.PublicClientApplication(msalConfig);
+                
+                // Handle redirect response
+                msalInstance.handleRedirectPromise().then(response => {
+                    if (response) {
+                        oneDriveAccessToken = response.accessToken;
+                        updateOneDriveUI();
+                        if (oneDriveConfig.fileId) {
+                            showOneDriveConnectedFile();
+                        } else {
+                            listOneDriveFiles();
+                        }
+                    }
+                }).catch(err => {
+                    console.error('MSAL redirect error:', err);
+                });
+                
+                // Check if already signed in
+                const accounts = msalInstance.getAllAccounts();
+                if (accounts.length > 0) {
+                    acquireTokenSilent().then(() => {
+                        updateOneDriveUI();
+                    }).catch(() => {});
+                }
+                
+                console.log('MSAL initialized successfully');
+            } catch (e) {
+                console.error('خطأ في تهيئة MSAL:', e);
+                showAlert('خطأ في تهيئة مكتبة المصادقة: ' + e.message, 'error');
+            }
+        }
+
+        async function acquireTokenSilent() {
+            if (!msalInstance) return null;
+            const accounts = msalInstance.getAllAccounts();
+            if (accounts.length === 0) return null;
+            
+            try {
+                const response = await msalInstance.acquireTokenSilent({
+                    scopes: ['Files.ReadWrite', 'User.Read'],
+                    account: accounts[0]
+                });
+                oneDriveAccessToken = response.accessToken;
+                return response.accessToken;
+            } catch (e) {
+                console.warn('Silent token acquisition failed, need interactive login:', e);
+                oneDriveAccessToken = null;
+                return null;
+            }
+        }
+
+        async function signInToOneDrive() {
+            if (!msalInstance) {
+                saveOneDriveConfig();
+                if (!msalInstance) {
+                    showAlert('يرجى إدخال Client ID أولاً', 'error');
+                    return;
+                }
+            }
+            
+            try {
+                const loginResponse = await msalInstance.loginPopup({
+                    scopes: ['Files.ReadWrite', 'User.Read'],
+                    prompt: 'select_account'
+                });
+                
+                oneDriveAccessToken = loginResponse.accessToken;
+                updateOneDriveUI();
+                
+                if (oneDriveConfig.fileId) {
+                    showOneDriveConnectedFile();
+                } else {
+                    listOneDriveFiles();
+                }
+                
+                showAlert('تم تسجيل الدخول بنجاح', 'success');
+            } catch (e) {
+                console.error('خطأ في تسجيل الدخول:', e);
+                if (e.errorCode !== 'user_cancelled') {
+                    showAlert('فشل تسجيل الدخول: ' + (e.errorMessage || e.message), 'error');
+                }
+            }
+        }
+
+        async function signOutFromOneDrive() {
+            if (!msalInstance) return;
+            
+            try {
+                const accounts = msalInstance.getAllAccounts();
+                if (accounts.length > 0) {
+                    await msalInstance.logoutPopup({
+                        account: accounts[0]
+                    });
+                }
+            } catch (e) {
+                console.error('خطأ في تسجيل الخروج:', e);
+            }
+            
+            oneDriveAccessToken = null;
+            disconnectOneDrive();
+            updateOneDriveUI();
+            showAlert('تم تسجيل الخروج', 'info');
+        }
+
+        function updateOneDriveUI() {
+            const signInSection = document.getElementById('oneDriveSignInSection');
+            const userInfo = document.getElementById('oneDriveUserInfo');
+            const fileBrowser = document.getElementById('oneDriveFileBrowser');
+            const connectedFile = document.getElementById('oneDriveConnectedFile');
+            
+            if (!msalInstance) {
+                if (signInSection) signInSection.style.display = 'block';
+                if (userInfo) userInfo.style.display = 'none';
+                if (fileBrowser) fileBrowser.style.display = 'none';
+                if (connectedFile) connectedFile.style.display = 'none';
+                return;
+            }
+            
+            const accounts = msalInstance.getAllAccounts();
+            const isSignedIn = accounts.length > 0 && oneDriveAccessToken;
+            
+            if (signInSection) signInSection.style.display = isSignedIn ? 'none' : 'block';
+            if (userInfo) {
+                userInfo.style.display = isSignedIn ? 'block' : 'none';
+                if (isSignedIn && accounts[0]) {
+                    const nameEl = document.getElementById('oneDriveUserName');
+                    const emailEl = document.getElementById('oneDriveUserEmail');
+                    if (nameEl) nameEl.textContent = accounts[0].name || accounts[0].username;
+                    if (emailEl) emailEl.textContent = accounts[0].username;
+                }
+            }
+            
+            if (isSignedIn && oneDriveConfig.fileId) {
+                if (fileBrowser) fileBrowser.style.display = 'none';
+                if (connectedFile) {
+                    connectedFile.style.display = 'block';
+                    showOneDriveConnectedFile();
+                }
+            } else if (isSignedIn) {
+                if (fileBrowser) fileBrowser.style.display = 'block';
+                if (connectedFile) connectedFile.style.display = 'none';
+            } else {
+                if (fileBrowser) fileBrowser.style.display = 'none';
+                if (connectedFile) connectedFile.style.display = 'none';
+            }
+        }
+
+        function showOneDriveConnectedFile() {
+            const fileNameEl = document.getElementById('connectedOneDriveFileName');
+            const lastSyncEl = document.getElementById('connectedOneDriveLastSync');
+            
+            if (fileNameEl) fileNameEl.textContent = oneDriveConfig.fileName || 'ملف غير معروف';
+            if (lastSyncEl) {
+                lastSyncEl.textContent = oneDriveConfig.lastSync 
+                    ? 'آخر مزامنة: ' + new Date(oneDriveConfig.lastSync).toLocaleString('ar-EG')
+                    : 'لم يتم المزامنة بعد';
+            }
+        }
+
+        async function graphApiCall(endpoint, options = {}) {
+            if (!oneDriveAccessToken) {
+                const token = await acquireTokenSilent();
+                if (!token) {
+                    showAlert('يرجى تسجيل الدخول أولاً', 'error');
+                    throw new Error('No access token');
+                }
+            }
+            
+            const url = endpoint.startsWith('http') ? endpoint : `https://graph.microsoft.com/v1.0${endpoint}`;
+            const response = await fetch(url, {
+                ...options,
+                headers: {
+                    'Authorization': `Bearer ${oneDriveAccessToken}`,
+                    ...(options.headers || {})
+                }
+            });
+            
+            if (response.status === 401) {
+                // Token expired, try to refresh
+                const newToken = await acquireTokenSilent();
+                if (newToken) {
+                    const retryResponse = await fetch(url, {
+                        ...options,
+                        headers: {
+                            'Authorization': `Bearer ${newToken}`,
+                            ...(options.headers || {})
+                        }
+                    });
+                    if (!retryResponse.ok) throw new Error(`API Error: ${retryResponse.status}`);
+                    if (retryResponse.status === 204) return null;
+                    return retryResponse.json();
+                }
+                throw new Error('Token expired, please sign in again');
+            }
+            
+            if (!response.ok) {
+                const errBody = await response.text();
+                console.error('Graph API Error:', errBody);
+                throw new Error(`API Error: ${response.status}`);
+            }
+            
+            if (response.status === 204) return null;
+            return response.json();
+        }
+
+        async function listOneDriveFiles(folderId = null) {
+            try {
+                const fileListEl = document.getElementById('oneDriveFileList');
+                const pathEl = document.getElementById('oneDrivePath');
+                const backBtn = document.getElementById('oneDriveBackBtn');
+                const fileBrowser = document.getElementById('oneDriveFileBrowser');
+                
+                if (fileBrowser) fileBrowser.style.display = 'block';
+                if (fileListEl) fileListEl.innerHTML = '<div style="text-align: center; padding: 30px; color: #888;"><i class="fas fa-spinner fa-spin" style="font-size: 2em;"></i><br>جاري التحميل...</div>';
+                
+                let endpoint;
+                if (folderId) {
+                    endpoint = `/me/drive/items/${folderId}/children?$orderby=name&$top=100`;
+                } else {
+                    endpoint = '/me/drive/root/children?$orderby=name&$top=100';
+                }
+                
+                const data = await graphApiCall(endpoint);
+                
+                if (backBtn) {
+                    backBtn.style.display = oneDriveFolderStack.length > 0 ? 'inline-flex' : 'none';
+                }
+                
+                if (pathEl) {
+                    const pathParts = oneDriveFolderStack.map(f => f.name);
+                    pathEl.textContent = '/ ' + (pathParts.length > 0 ? pathParts.join(' / ') : 'الجذر');
+                }
+                
+                if (!data.value || data.value.length === 0) {
+                    if (fileListEl) fileListEl.innerHTML = '<div style="text-align: center; padding: 20px; color: #888;">لا توجد ملفات</div>';
+                    return;
+                }
+                
+                const items = data.value.filter(item => {
+                    if (item.folder) return true;
+                    const name = (item.name || '').toLowerCase();
+                    return name.endsWith('.xlsx') || name.endsWith('.xls') || name.endsWith('.csv');
+                });
+                
+                if (items.length === 0) {
+                    if (fileListEl) fileListEl.innerHTML = '<div style="text-align: center; padding: 20px; color: #888;">لا توجد ملفات Excel في هذا المجلد</div>';
+                    return;
+                }
+                
+                if (fileListEl) {
+                    fileListEl.innerHTML = items.map(item => {
+                        const isFolder = !!item.folder;
+                        const icon = isFolder ? 'fa-folder' : (item.name.toLowerCase().endsWith('.csv') ? 'fa-file-csv' : 'fa-file-excel');
+                        const iconColor = isFolder ? '#f59e0b' : '#10b981';
+                        const size = item.size ? formatFileSize(item.size) : '';
+                        const modified = item.lastModifiedDateTime ? new Date(item.lastModifiedDateTime).toLocaleString('ar-EG') : '';
+                        
+                        return `
+                            <div onclick="${isFolder ? `navigateOneDriveFolder('${item.id}', '${item.name.replace(/'/g, "\\'")}')` : `selectOneDriveFile('${item.id}', '${item.name.replace(/'/g, "\\'")}', '${item.parentReference?.driveId || ''}')`}" 
+                                 style="padding: 12px 15px; border-bottom: 1px solid #f0f0f0; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: background 0.2s;"
+                                 onmouseover="this.style.background='#f0f9ff'" onmouseout="this.style.background='transparent'">
+                                <i class="fas ${icon}" style="font-size: 1.5em; color: ${iconColor}; width: 30px; text-align: center;"></i>
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600; color: #333;">${item.name}</div>
+                                    <div style="font-size: 0.8em; color: #888;">${size}${size && modified ? ' • ' : ''}${modified}</div>
+                                </div>
+                                ${isFolder ? '<i class="fas fa-chevron-left" style="color: #ccc;"></i>' : '<i class="fas fa-link" style="color: #0078d4;"></i>'}
+                            </div>
+                        `;
+                    }).join('');
+                }
+            } catch (e) {
+                console.error('خطأ في عرض ملفات OneDrive:', e);
+                const fileListEl = document.getElementById('oneDriveFileList');
+                if (fileListEl) fileListEl.innerHTML = `<div style="text-align: center; padding: 20px; color: #ef4444;"><i class="fas fa-exclamation-triangle"></i> خطأ في تحميل الملفات: ${e.message}</div>`;
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        function navigateOneDriveFolder(folderId, folderName) {
+            oneDriveFolderStack.push({ id: folderId, name: folderName });
+            listOneDriveFiles(folderId);
+        }
+
+        function navigateOneDriveBack() {
+            oneDriveFolderStack.pop();
+            const parentFolder = oneDriveFolderStack.length > 0 ? oneDriveFolderStack[oneDriveFolderStack.length - 1].id : null;
+            listOneDriveFiles(parentFolder);
+        }
+
+        function refreshOneDriveFiles() {
+            const currentFolder = oneDriveFolderStack.length > 0 ? oneDriveFolderStack[oneDriveFolderStack.length - 1].id : null;
+            listOneDriveFiles(currentFolder);
+        }
+
+        async function selectOneDriveFile(fileId, fileName, driveId) {
+            if (!confirm(`هل تريد ربط الملف "${fileName}"؟\nسيتم تحميل بيانات هذا الملف وعرضها.`)) return;
+            
+            oneDriveConfig.fileId = fileId;
+            oneDriveConfig.fileName = fileName;
+            oneDriveConfig.driveId = driveId || null;
+            saveOneDriveConfigToStorage();
+            
+            // Update source file info
+            sourceFile.type = 'onedrive';
+            sourceFile.name = fileName;
+            sourceFile.connectionType = 'sync';
+            saveSourceFileInfo();
+            updateFileStatus();
+            
+            // Download and display the file
+            await syncFromOneDrive();
+            
+            updateOneDriveUI();
+            showAlert(`تم ربط الملف "${fileName}" بنجاح`, 'success');
+            
+            // Start auto sync if enabled
+            if (oneDriveConfig.autoSync) {
+                startOneDriveAutoSync();
+            }
+        }
+
+        async function syncFromOneDrive() {
+            if (!oneDriveConfig.fileId) {
+                showAlert('لا يوجد ملف متصل', 'error');
+                return;
+            }
+            
+            try {
+                showAlert('جاري تحميل البيانات من OneDrive...', 'info');
+                
+                // Ensure we have a valid token
+                if (!oneDriveAccessToken) {
+                    const token = await acquireTokenSilent();
+                    if (!token) {
+                        showAlert('يرجى تسجيل الدخول أولاً', 'error');
+                        return;
+                    }
+                }
+                
+                // Download file content
+                const downloadUrl = `https://graph.microsoft.com/v1.0/me/drive/items/${oneDriveConfig.fileId}/content`;
+                const response = await fetch(downloadUrl, {
+                    headers: { 'Authorization': `Bearer ${oneDriveAccessToken}` }
+                });
+                
+                if (response.status === 401) {
+                    const newToken = await acquireTokenSilent();
+                    if (!newToken) {
+                        showAlert('انتهت الجلسة، يرجى تسجيل الدخول مرة أخرى', 'error');
+                        return;
+                    }
+                    const retryResponse = await fetch(downloadUrl, {
+                        headers: { 'Authorization': `Bearer ${newToken}` }
+                    });
+                    if (!retryResponse.ok) throw new Error('فشل تحميل الملف');
+                    await processOneDriveFileResponse(retryResponse);
+                } else if (!response.ok) {
+                    throw new Error('فشل تحميل الملف: ' + response.status);
+                } else {
+                    await processOneDriveFileResponse(response);
+                }
+                
+                oneDriveConfig.lastSync = new Date().toISOString();
+                saveOneDriveConfigToStorage();
+                showOneDriveConnectedFile();
+                
+                sourceFile.lastSync = new Date();
+                saveSourceFileInfo();
+                updateFileStatus();
+                
+            } catch (e) {
+                console.error('خطأ في تحميل ملف OneDrive:', e);
+                showAlert('فشل تحميل الملف: ' + e.message, 'error');
+            }
+        }
+
+        async function processOneDriveFileResponse(response) {
+            const arrayBuffer = await response.arrayBuffer();
+            const data = new Uint8Array(arrayBuffer);
+            const workbook = XLSX.read(data, { type: 'array' });
+            
+            let allData = [];
+            let idCounter = 1;
+            
+            workbook.SheetNames.forEach(sheetName => {
+                const worksheet = workbook.Sheets[sheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                
+                if (jsonData.length > 0) {
+                    const newData = jsonData.map(row => ({
+                        id: idCounter++,
+                        ...row
+                    }));
+                    allData = [...allData, ...newData];
+                }
+            });
+            
+            if (allData.length > 0) {
+                assetsData = allData;
+                refreshAvailableColumns();
+                initVisibleColumns();
+                filteredData = [...assetsData];
+                populateFilters();
+                updateUI();
+                saveToLocalStorage();
+                showAlert(`تم تحميل ${allData.length} سجل من OneDrive`, 'success');
+            } else {
+                showAlert('الملف فارغ أو لا يحتوي على بيانات', 'error');
+            }
+        }
+
+        async function syncToOneDrive() {
+            if (!oneDriveConfig.fileId) {
+                showAlert('لا يوجد ملف متصل', 'error');
+                return;
+            }
+            
+            try {
+                showAlert('جاري رفع التغييرات إلى OneDrive...', 'info');
+                
+                if (!oneDriveAccessToken) {
+                    const token = await acquireTokenSilent();
+                    if (!token) {
+                        showAlert('يرجى تسجيل الدخول أولاً', 'error');
+                        return;
+                    }
+                }
+                
+                // Create Excel workbook from current data
+                const dataToExport = assetsData.map(asset => {
+                    const row = { ...asset };
+                    delete row.id;
+                    return row;
+                });
+                
+                const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, 'Assets');
+                const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+                
+                // Upload to OneDrive (replace existing file)
+                const uploadUrl = `https://graph.microsoft.com/v1.0/me/drive/items/${oneDriveConfig.fileId}/content`;
+                const uploadResponse = await fetch(uploadUrl, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${oneDriveAccessToken}`,
+                        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                    },
+                    body: wbout
+                });
+                
+                if (uploadResponse.status === 401) {
+                    const newToken = await acquireTokenSilent();
+                    if (!newToken) {
+                        showAlert('انتهت الجلسة، يرجى تسجيل الدخول مرة أخرى', 'error');
+                        return;
+                    }
+                    const retryResponse = await fetch(uploadUrl, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${newToken}`,
+                            'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                        },
+                        body: wbout
+                    });
+                    if (!retryResponse.ok) throw new Error('فشل رفع الملف');
+                } else if (!uploadResponse.ok) {
+                    throw new Error('فشل رفع الملف: ' + uploadResponse.status);
+                }
+                
+                oneDriveConfig.lastSync = new Date().toISOString();
+                saveOneDriveConfigToStorage();
+                showOneDriveConnectedFile();
+                
+                sourceFile.lastSync = new Date();
+                saveSourceFileInfo();
+                updateFileStatus();
+                
+                showAlert('تم رفع التغييرات إلى OneDrive بنجاح', 'success');
+            } catch (e) {
+                console.error('خطأ في رفع التغييرات إلى OneDrive:', e);
+                showAlert('فشل رفع التغييرات: ' + e.message, 'error');
+            }
+        }
+
+        function disconnectOneDrive() {
+            oneDriveConfig.fileId = null;
+            oneDriveConfig.fileName = null;
+            oneDriveConfig.driveId = null;
+            oneDriveConfig.lastSync = null;
+            saveOneDriveConfigToStorage();
+            
+            stopOneDriveAutoSync();
+            
+            if (sourceFile.type === 'onedrive') {
+                sourceFile.type = null;
+                sourceFile.name = null;
+                sourceFile.connectionType = null;
+                saveSourceFileInfo();
+                updateFileStatus();
+            }
+            
+            oneDriveFolderStack = [];
+            updateOneDriveUI();
+            showAlert('تم قطع الاتصال بملف OneDrive', 'info');
+        }
+
+        function startOneDriveAutoSync() {
+            stopOneDriveAutoSync();
+            oneDriveAutoSyncInterval = setInterval(() => {
+                if (oneDriveConfig.fileId && oneDriveAccessToken) {
+                    console.log('OneDrive auto-sync triggered');
+                    syncToOneDrive().catch(e => console.error('فشل المزامنة التلقائية:', e));
+                }
+            }, 300000); // 5 minutes
+        }
+
+        function stopOneDriveAutoSync() {
+            if (oneDriveAutoSyncInterval) {
+                clearInterval(oneDriveAutoSyncInterval);
+                oneDriveAutoSyncInterval = null;
+            }
+        }
+
+        function toggleOneDriveAutoSync() {
+            const checkbox = document.getElementById('oneDriveAutoSync');
+            oneDriveConfig.autoSync = checkbox?.checked || false;
+            saveOneDriveConfigToStorage();
+            
+            if (oneDriveConfig.autoSync && oneDriveConfig.fileId) {
+                startOneDriveAutoSync();
+                showAlert('تم تفعيل المزامنة التلقائية', 'success');
+            } else {
+                stopOneDriveAutoSync();
+                showAlert('تم إيقاف المزامنة التلقائية', 'info');
+            }
+        }
+
+        // Tab switching for Online Sheet modal
+        function switchOnlineTab(tab) {
+            const oneDriveTab = document.getElementById('oneDriveTabContent');
+            const googleTab = document.getElementById('googleSheetsTabContent');
+            const tabOneDrive = document.getElementById('tabOneDrive');
+            const tabGoogle = document.getElementById('tabGoogleSheets');
+            
+            if (tab === 'onedrive') {
+                if (oneDriveTab) oneDriveTab.style.display = 'block';
+                if (googleTab) googleTab.style.display = 'none';
+                if (tabOneDrive) {
+                    tabOneDrive.style.background = 'linear-gradient(135deg, #0078d4, #106ebe)';
+                    tabOneDrive.style.color = 'white';
+                }
+                if (tabGoogle) {
+                    tabGoogle.style.background = '#f0f0f0';
+                    tabGoogle.style.color = '#666';
+                }
+            } else {
+                if (oneDriveTab) oneDriveTab.style.display = 'none';
+                if (googleTab) googleTab.style.display = 'block';
+                if (tabOneDrive) {
+                    tabOneDrive.style.background = '#f0f0f0';
+                    tabOneDrive.style.color = '#666';
+                }
+                if (tabGoogle) {
+                    tabGoogle.style.background = 'linear-gradient(135deg, #34a853, #188038)';
+                    tabGoogle.style.color = 'white';
+                }
+            }
+        }
+
         // ==================== إدارة الملفات الأونلاين ====================
         function showOnlineSheetModal() {
+            loadOneDriveConfig();
             displayConnectedSheets();
             const modal = document.getElementById('onlineSheetModal');
             if (modal) modal.classList.add('active');
@@ -3595,6 +4386,9 @@
         // ==================== بدء التطبيق ====================
         initializeData();
         updateLastUpdate();
+        
+        // Initialize OneDrive on page load
+        loadOneDriveConfig();
         
         window.addEventListener('beforeunload', function() {
             saveToLocalStorage();
