@@ -8,7 +8,7 @@
     <!-- Chart.js للرسوم البيانية -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     
-    <!-- XLSX لقراءة ملفات Excel -->
+    <!-- XLSX لقراءة وكتابة ملفات Excel -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     
     <!-- JS Barcode لطباعة الباركود -->
@@ -16,6 +16,9 @@
     
     <!-- Font Awesome للأيقونات -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- FileSaver.js لحفظ الملفات -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     
     <style>
         * {
@@ -36,7 +39,6 @@
             margin: 0 auto;
         }
         
-        /* الهيدر مع اللوجو */
         .header {
             background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             border-radius: 25px;
@@ -63,14 +65,21 @@
         
         .samcrete-logo {
             background: rgba(255,255,255,0.1);
-            padding: 10px 20px;
+            padding: 10px;
             border-radius: 15px;
             display: flex;
             align-items: center;
-            gap: 10px;
-            font-size: 1.5em;
-            font-weight: bold;
-            color: white;
+            justify-content: center;
+            width: 320px;
+            height: 90px;
+            overflow: hidden;
+        }
+        
+        .samcrete-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
         }
         
         .samcrete-logo i {
@@ -90,7 +99,6 @@
             font-size: 1em;
         }
         
-        /* شريط الأدوات */
         .toolbar {
             background: white;
             border-radius: 20px;
@@ -163,6 +171,26 @@
             box-shadow: 0 5px 15px rgba(245,158,11,0.3);
         }
         
+        .sync-btn {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 12px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+        
+        .sync-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(59,130,246,0.3);
+        }
+        
         .export-btn {
             background: linear-gradient(135deg, #8b5cf6, #6d28d9);
             color: white;
@@ -183,7 +211,26 @@
             box-shadow: 0 5px 15px rgba(139,92,246,0.3);
         }
         
-        /* شريط الفلاتر */
+        .print-btn {
+            background: linear-gradient(135deg, #374151, #1e293b);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 12px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+        
+        .print-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(55,65,81,0.3);
+        }
+        
         .filters-bar {
             background: white;
             border-radius: 20px;
@@ -295,7 +342,25 @@
             color: #1e3c72;
         }
         
-        /* بطاقات KPI */
+        .file-status {
+            background: rgba(255,255,255,0.15);
+            border-radius: 20px;
+            padding: 8px 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+            font-size: 0.9em;
+        }
+        
+        .file-status.online {
+            background: rgba(16, 185, 129, 0.3);
+        }
+        
+        .file-status i {
+            font-size: 1.1em;
+        }
+        
         .kpi-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -349,13 +414,6 @@
             line-height: 1.2;
         }
         
-        .kpi-sub {
-            color: #10b981;
-            font-size: 1.1em;
-            margin-top: 10px;
-        }
-        
-        /* تصنيفات الأجهزة */
         .categories-wrapper {
             background: white;
             border-radius: 25px;
@@ -416,7 +474,6 @@
             line-height: 1.2;
         }
         
-        /* الرسوم البيانية */
         .charts-row {
             display: grid;
             grid-template-columns: 2fr 1fr;
@@ -449,13 +506,14 @@
             width: 100% !important;
         }
         
-        /* جدول البيانات الرئيسي */
         .data-table-container {
             background: white;
             border-radius: 20px;
             padding: 20px;
             margin-bottom: 25px;
             box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+            width: 100%;
+            overflow: hidden;
         }
         
         .table-header {
@@ -463,12 +521,34 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         
         .table-title {
             font-size: 1.4em;
             color: #1e3c72;
             font-weight: 600;
+        }
+        
+        .table-controls {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .rows-per-page {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95em;
+        }
+        
+        .rows-per-page select {
+            padding: 5px 10px;
+            border-radius: 6px;
+            border: 1px solid #e0e7ff;
         }
         
         .active-filters {
@@ -496,9 +576,26 @@
             opacity: 0.8;
         }
         
+        .table-scroll {
+            width: 100%;
+            overflow-x: auto;
+            overflow-y: visible;
+            border-radius: 12px;
+            border: 1px solid #eef2f6;
+            margin-bottom: 20px;
+            -webkit-overflow-scrolling: touch;
+        }
+        
         .data-table {
             width: 100%;
             border-collapse: collapse;
+            min-width: 100%;
+            table-layout: auto;
+            white-space: nowrap;
+        }
+        
+        .data-table td.edit-mode {
+            white-space: normal;
         }
         
         .data-table th {
@@ -509,11 +606,27 @@
             position: sticky;
             top: 0;
             z-index: 10;
+            white-space: nowrap;
         }
         
         .data-table td {
             padding: 12px;
             border-bottom: 1px solid #eef2f6;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 300px;
+        }
+        
+        .data-table td .status-badge {
+            white-space: nowrap;
+            display: inline-block;
+        }
+        
+        .data-table td.editing {
+            white-space: normal;
+            max-width: none;
+            overflow: visible;
         }
         
         .data-table tr:hover {
@@ -523,23 +636,27 @@
         .edit-input {
             width: 100%;
             padding: 8px;
-            border: 2px solid #e0e7ff;
+            border: 2px solid #1e3c72;
             border-radius: 8px;
             font-size: 0.95em;
+            background: white;
+            min-width: 150px;
         }
         
         .edit-select {
             width: 100%;
             padding: 8px;
-            border: 2px solid #e0e7ff;
+            border: 2px solid #1e3c72;
             border-radius: 8px;
             background: white;
+            min-width: 150px;
         }
         
         .action-buttons {
             display: flex;
             gap: 8px;
             justify-content: center;
+            white-space: nowrap;
         }
         
         .btn-edit {
@@ -626,7 +743,6 @@
             color: #383d41;
         }
         
-        /* نافذة إضافة جهاز جديد */
         .modal {
             display: none;
             position: fixed;
@@ -750,7 +866,6 @@
             cursor: pointer;
         }
         
-        /* رسائل التنبيه */
         .alert {
             position: fixed;
             top: 20px;
@@ -799,6 +914,7 @@
             justify-content: center;
             gap: 10px;
             margin-top: 20px;
+            flex-wrap: wrap;
         }
         
         .page-btn {
@@ -825,46 +941,6 @@
             text-align: left;
         }
         
-        .stats-container {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            margin-top: 20px;
-        }
-        
-        .stat-box {
-            background: #f8faff;
-            border-radius: 15px;
-            padding: 15px;
-            text-align: center;
-        }
-        
-        .stat-box-title {
-            color: #666;
-            font-size: 0.9em;
-            margin-bottom: 5px;
-        }
-        
-        .stat-box-value {
-            font-size: 1.8em;
-            font-weight: bold;
-            color: #1e3c72;
-        }
-        
-        .no-results {
-            text-align: center;
-            padding: 40px;
-            background: #f8faff;
-            border-radius: 15px;
-            color: #666;
-        }
-        
-        .no-results i {
-            font-size: 4em;
-            color: #1e3c72;
-            margin-bottom: 15px;
-        }
-        
         @media (max-width: 768px) {
             .kpi-grid {
                 grid-template-columns: repeat(2, 1fr);
@@ -881,24 +957,30 @@
             .form-group.full-width {
                 grid-column: span 1;
             }
+            
+            .data-table td {
+                max-width: 200px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- الهيدر -->
         <div class="header">
             <div class="logo-container">
                 <div class="samcrete-logo">
-                    <i class="fas fa-hard-hat"></i>
-                    <span>SAMCRETE</span>
-                </div>
-                <div class="logo-text">
-                    <h1 id="mainTitle">نظام إدارة الأصول الشامل</h1>
-                    <p id="subTitle"><i class="fas fa-building"></i> Samcrete Egypt - إدارة ومتابعة الأصول</p>
+                    <img id="logoImage" src="samcrete-logo.png" alt="Samcrete Logo" />
                 </div>
             </div>
+            <div class="logo-text" style="flex: 1;">
+                <h1 id="mainTitle">نظام إدارة الأصول الشامل</h1>
+                <p id="subTitle"><i class="fas fa-building"></i> Samcrete Egypt - إدارة ومتابعة الأصول</p>
+            </div>
             <div style="display: flex; gap: 15px; align-items: center;">
+                <div class="file-status" id="fileStatus">
+                    <i class="fas fa-cloud" id="fileStatusIcon"></i>
+                    <span id="fileStatusText">غير متصل</span>
+                </div>
                 <div class="lang-toggle">
                     <button class="lang-option active" data-lang="ar">🇪🇬 العربية</button>
                     <button class="lang-option" data-lang="en">🇬🇧 English</button>
@@ -906,7 +988,6 @@
             </div>
         </div>
 
-        <!-- شريط الأدوات -->
         <div class="toolbar">
             <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
                 <i class="fas fa-upload"></i>
@@ -934,14 +1015,19 @@
                 <span id="addBtnText">إضافة جهاز جديد</span>
             </button>
             
-            <button class="save-btn" onclick="saveToLocalStorage()">
-                <i class="fas fa-save"></i>
-                <span id="saveBtnText">حفظ التغييرات</span>
+            <button class="sync-btn" onclick="syncWithSourceFile()">
+                <i class="fas fa-sync-alt"></i>
+                <span id="syncBtnText">مزامنة مع الملف</span>
             </button>
             
             <button class="export-btn" onclick="exportToExcel()">
                 <i class="fas fa-file-excel"></i>
                 <span id="exportBtnText">تصدير Excel</span>
+            </button>
+            
+            <button class="print-btn" onclick="printDashboard()" style="background: linear-gradient(135deg, #374151, #1e293b); color: white; border: none; padding: 12px 25px; border-radius: 12px; font-size: 1em; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.3s;">
+                <i class="fas fa-print"></i>
+                <span id="printBtnText">Print</span>
             </button>
             
             <button class="clear-filters" onclick="clearAllData()" style="background: #ef4444; margin-right: auto;">
@@ -950,7 +1036,6 @@
             </button>
         </div>
 
-        <!-- شريط الفلاتر -->
         <div class="filters-bar">
             <div class="filter-group">
                 <div class="filter-label">
@@ -958,7 +1043,7 @@
                     <span id="filterLocationLabel">الموقع</span>
                 </div>
                 <select class="filter-select" id="locationFilter" onchange="applyFilter()">
-                    <option value="all">الكل</option>
+                    <option value="all">All</option>
                 </select>
             </div>
             
@@ -968,7 +1053,7 @@
                     <span id="filterDeviceLabel">نوع الجهاز</span>
                 </div>
                 <select class="filter-select" id="deviceFilter" onchange="applyFilter()">
-                    <option value="all">الكل</option>
+                    <option value="all">All</option>
                 </select>
             </div>
             
@@ -978,7 +1063,7 @@
                     <span id="filterStatusLabel">الحالة</span>
                 </div>
                 <select class="filter-select" id="statusFilter" onchange="applyFilter()">
-                    <option value="all">الكل</option>
+                    <option value="all">All</option>
                 </select>
             </div>
             
@@ -988,7 +1073,7 @@
                     <span id="filterCheckLabel">حالة الفحص</span>
                 </div>
                 <select class="filter-select" id="checkFilter" onchange="applyFilter()">
-                    <option value="all">الكل</option>
+                    <option value="all">All</option>
                 </select>
             </div>
             
@@ -1006,10 +1091,8 @@
             </button>
         </div>
 
-        <!-- بطاقات KPI -->
         <div class="kpi-grid" id="kpiCards"></div>
 
-        <!-- تصنيفات الأجهزة -->
         <div class="categories-wrapper">
             <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
                 <label style="font-weight:bold;">تصنيف فرعي للكروت:</label>
@@ -1021,7 +1104,6 @@
             <div class="categories-grid" id="categoriesGrid"></div>
         </div>
 
-        <!-- الرسوم البيانية -->
         <div class="charts-row">
             <div class="chart-container">
                 <div class="chart-title"><i class="fas fa-chart-bar"></i> <span id="chartTitle1">توزيع الأجهزة حسب التصنيف</span></div>
@@ -1054,14 +1136,26 @@
             </div>
         </div>
 
-        <!-- جدول البيانات الرئيسي -->
-        <div class="data-table-container">
+        <div class="data-table-container" id="dataTableContainer">
             <div class="table-header">
                 <div class="table-title"><i class="fas fa-table"></i> <span id="tableTitle">بيانات الأصول التفصيلية</span></div>
-                <div class="active-filters" id="activeFilters"></div>
+                <div class="table-controls">
+                    <div class="rows-per-page">
+                        <label for="rowsPerPageSelect" id="rowsPerPageLabel">View</label>
+                        <select id="rowsPerPageSelect" class="form-select" onchange="changeRowsPerPage(this.value)">
+                            <option value="10">10</option>
+                            <option value="20" selected>20</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                            <option value="0" id="rowsPerPageAllOption">All</option>
+                        </select>
+                        <span id="rowsPerPageSuffix">Record for each page</span>
+                    </div>
+                    <div class="active-filters" id="activeFilters"></div>
+                </div>
             </div>
             
-            <div style="overflow-x: auto; max-height: 600px;">
+            <div class="table-scroll" id="tableScroll">
                 <table class="data-table" id="assetsTable">
                     <thead id="tableHeader"></thead>
                     <tbody id="tableBody"></tbody>
@@ -1071,13 +1165,12 @@
             <div id="pagination" class="pagination"></div>
         </div>
 
-        <!-- الفوتر -->
         <div class="footer" id="footerText">
-            <i class="fas fa-sync-alt"></i> آخر تحديث: <span id="lastUpdate"></span>
+            <i class="fas fa-sync-alt"></i> Last Update: <span id="lastUpdate"></span>
+            <span id="sourceInfo" style="margin-right: 15px; opacity: 0.8;"></span>
         </div>
     </div>
 
-    <!-- نافذة إضافة/تعديل جهاز -->
     <div class="modal" id="assetModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -1094,7 +1187,6 @@
         </div>
     </div>
 
-    <!-- نافذة إضافة أعمدة جديدة -->
     <div class="modal" id="columnMapperModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -1131,7 +1223,6 @@
         </div>
     </div>
 
-    <!-- نافذة إدارة الأعمدة -->
     <div class="modal" id="columnSettingsModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -1148,7 +1239,6 @@
         </div>
     </div>
 
-    <!-- نافذة الملفات الأونلاين -->
     <div class="modal" id="onlineSheetModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -1200,6 +1290,111 @@
         let availableColumns = [];
         let visibleColumns = [];
         let onlineSheets = []; // الملفات الأونلاين المتصلة
+        let editingCell = null; // تتبع الخلية التي يتم تعديلها حالياً
+        
+        // ==================== متغيرات جديدة لإدارة الملف المصدر ====================
+        let sourceFile = {
+            type: null, // 'local' أو 'online'
+            name: null,
+            data: null, // بيانات الملف الأصلي (للمقارنة)
+            lastSync: null,
+            fileHandle: null, // للتعامل مع الملف المحلي (File System API)
+            url: null, // رابط الملف الأونلاين
+            sheetName: null, // اسم الشيت للملف الأونلاين
+            connectionType: 'sync' // 'readonly' أو 'sync'
+        };
+
+        // ==================== طباعة الصفحة ====================
+        function printDashboard() {
+            let kpiHtml = document.getElementById('kpiCards').innerHTML;
+            let categoriesHtml = document.getElementById('categoriesGrid').innerHTML;
+            let barChart = document.getElementById('mainBarChart');
+            let pieChart = document.getElementById('devicePieChart');
+            let lastUpdate = document.getElementById('lastUpdate').textContent;
+
+            let tableNode = document.getElementById('assetsTable');
+            let tableHtml = '';
+            if (tableNode) {
+                let clone = tableNode.cloneNode(true);
+                let actionIndexes = [];
+                let ths = clone.querySelectorAll('thead th');
+                ths.forEach((th, idx) => {
+                    let txt = th.textContent.trim();
+                    let className = th.className || '';
+                    if (txt === 'إجراءات' || txt === 'Actions' || txt === '__actions' || className.includes('action') || className.includes('btn')) {
+                        actionIndexes.push(idx);
+                        th.remove();
+                    }
+                });
+                if (actionIndexes.length) {
+                    let trs = clone.querySelectorAll('tbody tr');
+                    trs.forEach(tr => {
+                        let tds = tr.querySelectorAll('td');
+                        actionIndexes.forEach(i => {
+                            if (tds.length > i) {
+                                tds[i].remove();
+                            }
+                        });
+                    });
+                }
+                tableHtml = clone.outerHTML;
+            } else {
+                tableHtml = '<div style="text-align:center;color:#888;padding:30px;">لا توجد بيانات لعرضها</div>';
+            }
+
+            let barChartImg = barChart ? barChart.toDataURL() : '';
+            let pieChartImg = pieChart ? pieChart.toDataURL() : '';
+
+            let printContent = `
+                <html lang="ar" dir="rtl">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>تقرير إدارة الأصول</title>
+                    <style>
+                        @page { size: A4 portrait; margin: 10mm; }
+                        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #fff; color: #222; margin: 0; padding: 0; }
+                        .print-header { text-align: center; padding: 20px 0 8px 0; border-bottom: 2px solid #eee; }
+                        .print-header h1 { font-size: 1.5em; margin-bottom: 6px; color: #1e3c72; }
+                        .print-header p { color: #666; font-size: 1em; }
+                        .kpi-print { display: flex; gap: 10px; justify-content: center; margin: 18px 0; flex-wrap: wrap; }
+                        .kpi-card { box-shadow: none; border: 1px solid #e0e7ff; min-width: 120px; max-width: 180px; font-size: 0.95em; }
+                        .categories-print { display: flex; gap: 8px; justify-content: center; margin: 18px 0; flex-wrap: wrap; }
+                        .category-card { box-shadow: none; border: 1px solid #e0e7ff; min-width: 80px; max-width: 120px; font-size: 0.95em; }
+                        .charts-print { display: flex; gap: 15px; justify-content: center; margin: 18px 0; flex-wrap: wrap; }
+                        .charts-print img { max-width: 100%; width: 100%; height: auto; border-radius: 8px; border: 1px solid #e0e7ff; display: block; margin-bottom: 10px; }
+                        .table-print { margin: 18px auto; max-width: 700px; }
+                        .data-table { width: 100%; border-collapse: collapse; font-size: 0.92em; page-break-inside: auto; }
+                        .data-table th, .data-table td { border: 1px solid #e0e7ff; padding: 5px; text-align: center; }
+                        .data-table th { background: #1e3c72; color: #fff; font-size: 1em; }
+                        .data-table tr { page-break-inside: avoid; }
+                        .data-table { word-break: break-word; }
+                        .footer-print { text-align: center; color: #666; margin-top: 20px; font-size: 0.95em; }
+                        @media print { .print-header { page-break-after: avoid; } .footer-print { page-break-before: avoid; } }
+                    </style>
+                </head>
+                <body>
+                    <div class="print-header">
+                        <h1>تقرير إدارة الأصول</h1>
+                        <p>Samcrete Egypt - تقرير شامل للأصول</p>
+                    </div>
+                    <div class="kpi-print">${kpiHtml}</div>
+                    <div class="categories-print">${categoriesHtml}</div>
+                    <div class="charts-print">
+                        <img src="${pieChartImg}" alt="Pie Chart">
+                        <img src="${barChartImg}" alt="Bar Chart">
+                    </div>
+                    <div class="table-print">${tableHtml}</div>
+                    <div class="footer-print">
+                        <span><b>آخر تحديث:</b> ${lastUpdate}</span>
+                    </div>
+                </body>
+                </html>
+            `;
+            let printWindow = window.open('', '_blank');
+            printWindow.document.write(printContent);
+            printWindow.document.close();
+            setTimeout(() => { printWindow.print(); }, 500);
+        }
 
         // حالة التطبيق المحفوظة
         let currentFilters = {
@@ -1209,6 +1404,7 @@
             check: 'all',
             search: '',
             lang: 'ar',
+            rowsPerPage: 20,
             barChartField: 'Location',
             barChartSubField: 'Check status',
             pieChartField: 'Asset Type',
@@ -1226,6 +1422,7 @@
                 addBtnText: 'إضافة جهاز جديد',
                 manageColumnsBtnText: 'إدارة الأعمدة',
                 saveBtnText: 'حفظ التغييرات',
+                syncBtnText: 'مزامنة مع الملف',
                 exportBtnText: 'تصدير Excel',
                 filterLocationLabel: 'الموقع',
                 filterDeviceLabel: 'نوع الجهاز',
@@ -1238,6 +1435,9 @@
                 tableTitle: 'بيانات الأصول التفصيلية',
                 clearDataBtnText: 'تنظيف البيانات',
                 all: 'الكل',
+                rowsPerPageLabel: 'عرض',
+                rowsPerPageSuffix: 'سجل لكل صفحة',
+                searchPlaceholder: 'رقم تسلسلي، موديل، موظف... ',
                 actions: 'إجراءات',
                 edit: 'تعديل',
                 delete: 'حذف',
@@ -1246,7 +1446,7 @@
                 add: 'إضافة',
                 barcode: 'باركود',
                 modalAdd: 'إضافة جهاز جديد',
-                modalEdit: 'تعديل بيانات الجهاز',
+                modalEdit: ' تعديل بيانات الجهاز',
                 noData: 'لا توجد بيانات',
                 noResults: 'لا توجد نتائج للتصفية المحددة',
                 confirmDelete: 'هل أنت متأكد من حذف هذا الجهاز؟',
@@ -1259,7 +1459,12 @@
                     devices: 'أنواع الأجهزة',
                     employees: 'الموظفين'
                 },
-                tableHeaders: ['#', 'الموقع', 'الوصف', 'الموظف', 'نوع الجهاز', 'الموديل', 'الرقم التسلسلي', 'الحالة', 'حالة الفحص', 'الإجراءات']
+                tableHeaders: ['#', 'الموقع', 'الوصف', 'الموظف', 'نوع الجهاز', 'الموديل', 'الرقم التسلسلي', 'الحالة', 'حالة الفحص', 'الإجراءات'],
+                deviceCount: 'عدد الأجهزة',
+                device: 'جهاز',
+                printBtnText: 'طباعة',
+                devices: 'أجهزة'
+                
             },
             en: {
                 mainTitle: 'Comprehensive Asset Management System',
@@ -1270,6 +1475,7 @@
                 addBtnText: 'Add New Asset',
                 manageColumnsBtnText: 'Manage Columns',
                 saveBtnText: 'Save Changes',
+                syncBtnText: 'Sync with File',
                 exportBtnText: 'Export to Excel',
                 filterLocationLabel: 'Location',
                 filterDeviceLabel: 'Device Type',
@@ -1303,7 +1509,11 @@
                     devices: 'Device Types',
                     employees: 'Employees'
                 },
-                tableHeaders: ['#', 'Location', 'Description', 'Employee', 'Device Type', 'Model', 'Serial Number', 'Status', 'Check Status', 'Actions']
+                tableHeaders: ['#', 'Location', 'Description', 'Employee', 'Device Type', 'Model', 'Serial Number', 'Status', 'Check Status', 'Actions'],
+                deviceCount: 'Device Count',
+                device: 'device',
+                printBtnText: 'Print',
+                devices: 'devices'
             }
         };
 
@@ -1347,13 +1557,10 @@
                 return;
             }
 
-            // ترحيل حالة سابقة حيث تم حفظ الأصول داخل dashboardFilters
-            // (نقوم بنقل الأصول إلى assetsData مع الحفاظ على الفلاتر)
             if (parsed && typeof parsed === 'object' && parsed.assetsData) {
                 console.log('تم العثور على بيانات أصول محفوظة داخل dashboardFilters؛ سيتم ترحيلها إلى assetsData');
                 localStorage.setItem('assetsData', JSON.stringify(parsed.assetsData));
 
-                // احتفظ بالفلاتر وأزل الحقول الأخرى
                 delete parsed.assetsData;
                 delete parsed.availableColumns;
                 delete parsed.visibleColumns;
@@ -1361,7 +1568,6 @@
                 delete parsed.onlineSheets;
 
                 localStorage.setItem('dashboardFilters', JSON.stringify(parsed));
-                // لا نعيد return هنا حتى يتم تطبيق الفلاتر المترحلة
             }
 
             const expectedKeys = ['location', 'device', 'status', 'check', 'search', 'lang', 'barChartField', 'barChartSubField', 'pieChartField', 'categorySubField'];
@@ -1374,7 +1580,6 @@
 
             currentFilters = parsed;
 
-            // تطبيق الفلاتر إذا كانت العناصر موجودة
             const locationFilter = document.getElementById('locationFilter');
             if (locationFilter) locationFilter.value = currentFilters.location;
             const deviceFilter = document.getElementById('deviceFilter');
@@ -1385,7 +1590,7 @@
             if (checkFilter) checkFilter.value = currentFilters.check;
             const searchInput = document.getElementById('searchInput');
             if (searchInput) searchInput.value = currentFilters.search;
-            // الرسوم البيانية
+            
             const barChartField = document.getElementById('barChartField');
             if (barChartField) barChartField.value = currentFilters.barChartField;
             const barChartSubField = document.getElementById('barChartSubField');
@@ -1394,10 +1599,220 @@
             if (pieChartField) pieChartField.value = currentFilters.pieChartField;
             const categorySubField = document.getElementById('categorySubField');
             if (categorySubField) categorySubField.value = currentFilters.categorySubField;
-            // اللغة
+
+            const rowsPerPageSelect = document.getElementById('rowsPerPageSelect');
+            if (rowsPerPageSelect) {
+                rowsPerPage = currentFilters.rowsPerPage || rowsPerPage;
+                rowsPerPageSelect.value = rowsPerPage;
+            }
+
             if (currentFilters.lang !== currentLang) {
                 switchLanguage(currentFilters.lang);
             }
+        }
+
+        // ==================== تحديث حالة الملف المصدر ====================
+        function updateFileStatus() {
+            const statusEl = document.getElementById('fileStatus');
+            const iconEl = document.getElementById('fileStatusIcon');
+            const textEl = document.getElementById('fileStatusText');
+            const sourceInfoEl = document.getElementById('sourceInfo');
+            
+            if (!statusEl || !iconEl || !textEl || !sourceInfoEl) return;
+            
+            if (sourceFile.type === 'local') {
+                statusEl.className = 'file-status';
+                iconEl.className = 'fas fa-file-excel';
+                textEl.textContent = `File: ${sourceFile.name || 'ملف محلي'}`;
+                sourceInfoEl.innerHTML = `<i class="fas fa-link"></i> المصدر: ${sourceFile.name}`;
+            } else if (sourceFile.type === 'online') {
+                statusEl.className = 'file-status online';
+                iconEl.className = 'fas fa-cloud';
+                textEl.textContent = `متصل: ${sourceFile.name || 'ملف أونلاين'}`;
+                sourceInfoEl.innerHTML = `<i class="fas fa-cloud"></i> المصدر: ${sourceFile.name}`;
+            } else {
+                statusEl.className = 'file-status';
+                iconEl.className = 'fas fa-cloud';
+                textEl.textContent = 'غير متصل';
+                sourceInfoEl.innerHTML = '';
+            }
+        }
+
+        // ==================== حفظ الملف المصدر في localStorage ====================
+        function saveSourceFileInfo() {
+            const infoToSave = {
+                type: sourceFile.type,
+                name: sourceFile.name,
+                lastSync: sourceFile.lastSync,
+                url: sourceFile.url,
+                sheetName: sourceFile.sheetName,
+                connectionType: sourceFile.connectionType
+            };
+            localStorage.setItem('sourceFileInfo', JSON.stringify(infoToSave));
+        }
+
+        function loadSourceFileInfo() {
+            const saved = localStorage.getItem('sourceFileInfo');
+            if (saved) {
+                try {
+                    const info = JSON.parse(saved);
+                    sourceFile.type = info.type;
+                    sourceFile.name = info.name;
+                    sourceFile.lastSync = info.lastSync;
+                    sourceFile.url = info.url;
+                    sourceFile.sheetName = info.sheetName;
+                    sourceFile.connectionType = info.connectionType;
+                } catch (e) {
+                    console.error('خطأ في تحميل معلومات الملف المصدر:', e);
+                }
+            }
+            updateFileStatus();
+        }
+
+        // ==================== مزامنة التغييرات مع الملف المصدر ====================
+        async function syncWithSourceFile() {
+            if (!sourceFile.type) {
+                showAlert('لا يوجد ملف مصدر متصل', 'error');
+                return;
+            }
+
+            showAlert('جاري المزامنة...', 'info');
+
+            try {
+                if (sourceFile.type === 'local') {
+                    await syncWithLocalFile();
+                } else if (sourceFile.type === 'online') {
+                    showAlert('المزامنة مع الملفات الأونلاين تحتاج إلى رابط تحميل مباشر. سيتم تنزيل الملف.', 'info');
+                    exportToExcel();
+                }
+                
+                sourceFile.lastSync = new Date();
+                saveSourceFileInfo();
+                updateFileStatus();
+                showAlert('تمت المزامنة بنجاح', 'success');
+            } catch (error) {
+                console.error('خطأ في المزامنة:', error);
+                showAlert('فشل المزامنة: ' + error.message, 'error');
+            }
+        }
+
+        // ==================== المزامنة مع الملف المحلي ====================
+        async function syncWithLocalFile() {
+            if (!sourceFile.fileHandle && sourceFile.type === 'local') {
+                showAlert('الملف المحلي غير متاح للحفظ التلقائي. استخدم "تصدير Excel" بدلاً من ذلك', 'error');
+                return;
+            }
+
+            try {
+                const file = await sourceFile.fileHandle.getFile();
+                const data = await file.arrayBuffer();
+                const workbook = XLSX.read(data, { type: 'array' });
+                
+                const currentWorksheet = XLSX.utils.json_to_sheet(assetsData);
+                
+                const newWorkbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(newWorkbook, currentWorksheet, 'Assets');
+                
+                const wbout = XLSX.write(newWorkbook, { bookType: 'xlsx', type: 'array' });
+                const blob = new Blob([wbout], { type: 'application/octet-stream' });
+                
+                const writable = await sourceFile.fileHandle.createWritable();
+                await writable.write(blob);
+                await writable.close();
+                
+                console.log('تم حفظ التغييرات في الملف المحلي');
+            } catch (error) {
+                console.error('خطأ في المزامنة مع الملف المحلي:', error);
+                throw error;
+            }
+        }
+
+        // ==================== استيراد من ملف أونلاين مع تجاوز CORS ====================
+        async function importFromOnlineSheet(url) {
+            try {
+                showAlert('جاري تحميل الملف...', 'info');
+                
+                let downloadUrl = url;
+                
+                if (url.includes('docs.google.com/spreadsheets')) {
+                    const fileId = url.match(/[-\w]{25,}/);
+                    if (fileId) {
+                        downloadUrl = `https://docs.google.com/spreadsheets/d/${fileId[0]}/export?format=csv`;
+                    }
+                } else if (url.includes('drive.google.com')) {
+                    const fileId = url.match(/[-\w]{25,}/);
+                    if (fileId) {
+                        downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId[0]}`;
+                    }
+                }
+                
+                const response = await fetch(downloadUrl, { mode: 'cors' });
+                if (!response.ok) throw new Error('فشل تحميل الملف');
+                
+                const text = await response.text();
+                await processCSVData(text);
+                
+            } catch (error) {
+                console.error('خطأ في استيراد الملف الأونلاين:', error);
+                showAlert('فشل تحميل الملف. تأكد من أن الرابط عام وقابل للتحميل.', 'error');
+                throw error;
+            }
+        }
+
+        async function processCSVData(text) {
+            const rows = text.trim().split(/\r?\n/).map(r => r.split(','));
+            const headers = rows.shift().map(h => h.trim().replace(/^"|"$/g, ''));
+            
+            const newData = rows.map((row, idx) => {
+                const obj = { id: assetsData.length + idx + 1 };
+                headers.forEach((header, hIdx) => {
+                    let value = row[hIdx] ? row[hIdx].trim() : '';
+                    value = value.replace(/^"|"$/g, '');
+                    obj[header] = value;
+                });
+                return obj;
+            });
+
+            if (newData.length) {
+                assetsData = newData;
+                refreshAvailableColumns();
+                initVisibleColumns();
+                filteredData = [...assetsData];
+                populateFilters();
+                updateUI();
+                saveToLocalStorage();
+                showAlert(`تم استيراد ${newData.length} سجل`, 'success');
+            }
+        }
+
+        // ==================== حفظ وتحميل تفضيلات الأعمدة ====================
+        function saveColumnPreferences() {
+            const columnPreferences = {
+                visibleColumns: visibleColumns,
+                extraColumns: extraColumns
+            };
+            localStorage.setItem('columnPreferences', JSON.stringify(columnPreferences));
+            console.log('تم حفظ تفضيلات الأعمدة:', columnPreferences);
+        }
+
+        function loadColumnPreferences() {
+            const saved = localStorage.getItem('columnPreferences');
+            if (saved) {
+                try {
+                    const preferences = JSON.parse(saved);
+                    if (preferences.visibleColumns && Array.isArray(preferences.visibleColumns)) {
+                        visibleColumns = preferences.visibleColumns;
+                    }
+                    if (preferences.extraColumns && Array.isArray(preferences.extraColumns)) {
+                        extraColumns = preferences.extraColumns;
+                    }
+                    console.log('تم تحميل تفضيلات الأعمدة:', preferences);
+                    return true;
+                } catch (e) {
+                    console.error('خطأ في تحميل تفضيلات الأعمدة:', e);
+                }
+            }
+            return false;
         }
 
         function refreshAvailableColumns() {
@@ -1411,7 +1826,9 @@
         }
 
         function initVisibleColumns() {
-            if (visibleColumns.length === 0) {
+            const loaded = loadColumnPreferences();
+            
+            if (!loaded || visibleColumns.length === 0) {
                 visibleColumns = [
                     'Location',
                     'Location Description',
@@ -1425,17 +1842,21 @@
                 ];
             }
 
-            // Ensure all visible columns exist in availableColumns
             visibleColumns = visibleColumns.filter(c => c === '__actions' || availableColumns.includes(c));
+            
+            if (!visibleColumns.includes('__actions')) {
+                visibleColumns.push('__actions');
+            } else {
+                visibleColumns = visibleColumns.filter(c => c !== '__actions');
+                visibleColumns.push('__actions');
+            }
         }
 
         // ==================== تهيئة البيانات من الملف ====================
         async function initializeData() {
             try {
-                // محاولة تحميل البيانات من localStorage أولاً
                 let savedData = localStorage.getItem('assetsData');
 
-                // إذا كانت البيانات محفوظة خطأً تحت dashboardFilters (بسبب نسخة أقدم من التطبيق)، نقوم بترحيلها
                 if (!savedData) {
                     const dashboardFiltersRaw = localStorage.getItem('dashboardFilters');
                     if (dashboardFiltersRaw) {
@@ -1463,13 +1884,10 @@
                         const parsedData = JSON.parse(savedData);
                         console.log('البيانات المحفوظة:', parsedData);
                         
-                        // التحقق من نوع البيانات المحفوظة
                         let extractedAssetsData = null;
                         if (Array.isArray(parsedData)) {
-                            // البيانات محفوظة كمصفوفة مباشرة
                             extractedAssetsData = parsedData;
                         } else if (parsedData && typeof parsedData === 'object' && parsedData.assetsData) {
-                            // البيانات محفوظة ككائن يحتوي على assetsData
                             extractedAssetsData = parsedData.assetsData;
                         }
                         
@@ -1487,73 +1905,65 @@
                         assetsData = [];
                     }
                 } else {
-                    // بيانات افتراضية إذا لم تكن هناك بيانات محفوظة
-                const groundData = [
-                    { Location: 'Ground Floor', 'Location Description': 'None', 'Employee Number': 1997, 'Full Name': 'مينا سعيد صموئيل عزيز', 'Asset Number': 32005, 'Asset Key': '2060/02-113', 'Asset Type': 'LAP TOP', 'Asset Description': 'LAP TOP Lenovo I5 4.2/3 G.H.Z RAM 16 GB SSD 500 GB SN : CB29562090', 'S/N': 'CB29562090', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                    { Location: 'Ground Floor', 'Location Description': 'ادارة المالية', 'Employee Number': 1075, 'Full Name': 'جورج صبحى نخلة ميخائيل', 'Asset Number': 103511, 'Asset Key': '2060/06-515', 'Asset Type': 'Printer', 'Asset Description': 'HP LaserJet 137 SN : CNB2M7RG29', 'S/N': 'CNB2M7RG29', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                    { Location: 'Ground Floor', 'Location Description': 'ادارة المالية', 'Employee Number': 1286, 'Full Name': 'مجدى ميشيل جرجس صليب', 'Asset Number': 75232, 'Asset Key': '2060/02-296', 'Asset Type': 'LAP TOP', 'Asset Description': 'LAP TOP HP I7 8565U RAM 8 GB SSD 256 GB SSD SN : 5CD910129D', 'S/N': '5CD910129D', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                    { Location: 'Ground Floor', 'Location Description': 'ادارة المالية', 'Employee Number': 369, 'Full Name': 'سامح سعد صليب يوسف', 'Asset Number': 78437, 'Asset Key': '2060/02-310', 'Asset Type': 'LAP TOP', 'Asset Description': 'LAP TOP Lenovo I5 8250 RAM 8 GB HD 1 TB DVD SN : R90SM66Z', 'S/N': 'R90SM66Z', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                    { Location: 'Ground Floor', 'Location Description': 'ادارة المالية', 'Employee Number': 86, 'Full Name': 'ايهاب مرقص ابراهيم مرقص', 'Asset Number': 85616, 'Asset Key': '2060/02-357', 'Asset Type': 'LAP TOP', 'Asset Description': 'LAP TOP Lenovo I5 8250 RAM 20 GB SSD 500 GB DVD SN : PF1M3MR0', 'S/N': 'PF1M3MR0', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                    { Location: 'Ground Floor', 'Location Description': 'ادارة المالية', 'Employee Number': 86, 'Full Name': 'ايهاب مرقص ابراهيم مرقص', 'Asset Number': 44368, 'Asset Key': '2060/06-431', 'Asset Type': 'Printer', 'Asset Description': 'HP LaserJet M103 SN : VNF3F10769', 'S/N': 'VNF3F10769', Status: 'Outdated', Comments: 'مشكلة في بكرة السحب', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                    { Location: 'Ground Floor', 'Location Description': 'قسم الحسابات', 'Employee Number': 1674, 'Full Name': 'ماركو صموئيل نادر عزيز', 'Asset Number': 84530, 'Asset Key': '2060/02-349', 'Asset Type': 'LAP TOP', 'Asset Description': 'LAP TOP Lenovo I5 8250 RAM 8 GB HD 2 TB DVD SN : PF1M3UEQ', 'S/N': 'PF1M3UEQ', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                    { Location: 'Ground Floor', 'Location Description': 'قسم الحسابات', 'Employee Number': 345, 'Full Name': 'مينا عادل عبد الملك جرجس', 'Asset Number': 103505, 'Asset Key': '2060/02-435', 'Asset Type': 'LAP TOP', 'Asset Description': 'LAP TOP Lenovo I5 8250 RAM 20 GB HD 500 GB SSD DVD SN : PF11LT9AT', 'S/N': 'PF11LT9AT', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                    { Location: 'Ground Floor', 'Location Description': 'قسم الحسابات', 'Employee Number': 4286, 'Full Name': 'فادى نبيل فهمى متى', 'Asset Number': 85618, 'Asset Key': '2060/02-358', 'Asset Type': 'LAP TOP', 'Asset Description': 'LAP TOP Lenovo I5 8250 RAM 20 GB SSD 500 GB DVD SN : PF1LCYXF', 'S/N': 'PF1LCYXF', Status: 'Outdated', Comments: 'مشكلة فى البطارية - بيسخن - كسر فى اطار الشاشة', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                    { Location: 'Ground Floor', 'Location Description': 'قسم الحسابات', 'Employee Number': 4286, 'Full Name': 'فادى نبيل فهمى متى', 'Asset Number': 30898, 'Asset Key': '2060/06-220', 'Asset Type': 'Printer', 'Asset Description': 'HP Laser Jet Pro M1530 SN : GNG891T68T', 'S/N': 'GNG891T68T', Status: 'Outdated', Comments: 'تالفه', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                    { Location: 'Ground Floor', 'Location Description': 'قسم الحسابات', 'Employee Number': 4290, 'Full Name': 'بيتر رؤوف عشم حنس', 'Asset Number': 84528, 'Asset Key': '2060/02-347', 'Asset Type': 'LAP TOP', 'Asset Description': 'LAP TOP Lenovo I5 8250 RAM 20 GB HD 500 GB DVD SN : PF1LCXGC', 'S/N': 'PF1LCXGC', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' }
-                ];
-                
-                // بيانات 1st Floor
-                const firstFloorData = [
-                    { Location: 'First Floor', 'Location Description': 'قسم الدراسات', 'Employee Number': 2809, 'Full Name': 'Abanoub Fathy Shehata Geries', 'Asset Number': 15259, 'Asset Key': '2060/04-040', 'Asset Type': 'Screen', 'Asset Description': 'Dell LCD SN : 098182540010002', 'S/N': '98182540010002', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                    { Location: 'First Floor', 'Location Description': 'الادارة العامة للانشاءات', 'Employee Number': 836, 'Full Name': 'Peter Rafaat Labib Ghabbour', 'Asset Number': 8403, 'Asset Key': '2060/10-012', 'Asset Type': 'External Hard', 'Asset Description': 'EXTERNAL 500 GB SN : 9913019', 'S/N': '9913019', Status: '', Comments: 'غير موجود', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                    { Location: 'First Floor', 'Location Description': 'قسم الدراسات', 'Employee Number': 800, 'Full Name': 'Hossam Helmy Abdallah', 'Asset Number': 33072, 'Asset Key': '2060/06-257', 'Asset Type': 'Printer', 'Asset Description': 'HP DeskJet M1536 Pro All In One SN : CNG8G2K97L', 'S/N': 'CNG8G2K97L', Status: 'Needs maintenance', Comments: 'توفى .... ويستخدمها مهندس ماير ماهر', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': 'نقل الى م/ ماير ماهر' }
-                ];
-                
-                // بيانات 2nd Floor
-                const secondFloorData = [
-                    { Location: 'Second Floor', 'Location Description': 'قسم المشتريات', 'Employee Number': 2204, 'Full Name': 'Bishoy Samy Kamel Mossad', 'Asset Number': 53543, 'Asset Key': '2060/06-453', 'Asset Type': 'Printer', 'Asset Description': 'HP 426 SN : PHBLL9L27G', 'S/N': 'PHBLL9L27G', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' }
-                ];
-                
-                // بيانات 3rd Floor
-                const thirdFloorData = [
-                    { Location: 'Third Floor', 'Location Description': 'قسم النظم والمعلومات', 'Employee Number': 46, 'Full Name': 'Fayek Noshy Eshaq Guirguis', 'Asset Number': 186107, 'Asset Key': '2060/12-102', 'Asset Type': 'Access Point', 'Asset Description': 'Access Point WireLess TP Link OC200', 'S/N': '22143P8000262', Status: '', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' }
-                ];
-                
-                // بيانات Warehouse
-                const warehouseData = [
-                    { Location: 'Warehouse', 'Location Description': '', 'Employee Number': '', 'Full Name': '', 'Asset Number': '', 'Asset Key': '2060/01-419', 'Asset Type': 'Desk Top', 'Asset Description': 'Dell 3020 I3 3.5/3 RAM 8 GB HD 500 GB DVD', 'S/N': 'CJ63L52', Status: 'Outdated', Comments: 'Outdated', 'QR Code': '', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                    { Location: 'Warehouse', 'Location Description': '', 'Employee Number': '', 'Full Name': '', 'Asset Number': '', 'Asset Key': '2060/01-470', 'Asset Type': 'Desk Top', 'Asset Description': 'Dell 3020 I3 3.5/3 RAM 8 GB HD 500 GB DVD', 'S/N': 'C378CB2', Status: 'Outdated', Comments: 'need hd ssd', 'QR Code': '', 'Check status': 'Checked', 'تعليق المخازن': '' }
-                ];
-                
-                // دمج جميع البيانات
-                assetsData = [...groundData, ...firstFloorData, ...secondFloorData, ...thirdFloorData, ...warehouseData];
-                
-                // إضافة معرف فريد لكل جهاز
-                assetsData = assetsData.map((asset, index) => ({
-                    id: index + 1,
-                    ...asset
-                }));
-                
-                // حفظ البيانات الافتراضية في localStorage إذا لم تكن هناك بيانات محفوظة
-                if (!savedData) {
+                    const groundData = [
+                        { Location: 'Ground Floor', 'Location Description': 'None', 'Employee Number': 1997, 'Full Name': 'مينا سعيد صموئيل عزيز', 'Asset Number': 32005, 'Asset Key': '2060/02-113', 'Asset Type': 'LAP TOP', 'Asset Description': 'LAP TOP Lenovo I5 4.2/3 G.H.Z RAM 16 GB SSD 500 GB SN : CB29562090', 'S/N': 'CB29562090', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
+                        { Location: 'Ground Floor', 'Location Description': 'ادارة المالية', 'Employee Number': 1075, 'Full Name': 'جورج صبحى نخلة ميخائيل', 'Asset Number': 103511, 'Asset Key': '2060/06-515', 'Asset Type': 'Printer', 'Asset Description': 'HP LaserJet 137 SN : CNB2M7RG29', 'S/N': 'CNB2M7RG29', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
+                        { Location: 'Ground Floor', 'Location Description': 'ادارة المالية', 'Employee Number': 1286, 'Full Name': 'مجدى ميشيل جرجس صليب', 'Asset Number': 75232, 'Asset Key': '2060/02-296', 'Asset Type': 'LAP TOP', 'Asset Description': 'LAP TOP HP I7 8565U RAM 8 GB SSD 256 GB SSD SN : 5CD910129D', 'S/N': '5CD910129D', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
+                        { Location: 'Ground Floor', 'Location Description': 'ادارة المالية', 'Employee Number': 369, 'Full Name': 'سامح سعد صليب يوسف', 'Asset Number': 78437, 'Asset Key': '2060/02-310', 'Asset Type': 'LAP TOP', 'Asset Description': 'LAP TOP Lenovo I5 8250 RAM 8 GB HD 1 TB DVD SN : R90SM66Z', 'S/N': 'R90SM66Z', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
+                        { Location: 'Ground Floor', 'Location Description': 'ادارة المالية', 'Employee Number': 86, 'Full Name': 'ايهاب مرقص ابراهيم مرقص', 'Asset Number': 85616, 'Asset Key': '2060/02-357', 'Asset Type': 'LAP TOP', 'Asset Description': 'LAP TOP Lenovo I5 8250 RAM 20 GB SSD 500 GB DVD SN : PF1M3MR0', 'S/N': 'PF1M3MR0', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
+                        { Location: 'Ground Floor', 'Location Description': 'ادارة المالية', 'Employee Number': 86, 'Full Name': 'ايهاب مرقص ابراهيم مرقص', 'Asset Number': 44368, 'Asset Key': '2060/06-431', 'Asset Type': 'Printer', 'Asset Description': 'HP LaserJet M103 SN : VNF3F10769', 'S/N': 'VNF3F10769', Status: 'Outdated', Comments: 'مشكلة في بكرة السحب', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
+                        { Location: 'Ground Floor', 'Location Description': 'قسم الحسابات', 'Employee Number': 1674, 'Full Name': 'ماركو صموئيل نادر عزيز', 'Asset Number': 84530, 'Asset Key': '2060/02-349', 'Asset Type': 'LAP TOP', 'Asset Description': 'LAP TOP Lenovo I5 8250 RAM 8 GB HD 2 TB DVD SN : PF1M3UEQ', 'S/N': 'PF1M3UEQ', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
+                        { Location: 'Ground Floor', 'Location Description': 'قسم الحسابات', 'Employee Number': 345, 'Full Name': 'مينا عادل عبد الملك جرجس', 'Asset Number': 103505, 'Asset Key': '2060/02-435', 'Asset Type': 'LAP TOP', 'Asset Description': 'LAP TOP Lenovo I5 8250 RAM 20 GB HD 500 GB SSD DVD SN : PF11LT9AT', 'S/N': 'PF11LT9AT', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
+                        { Location: 'Ground Floor', 'Location Description': 'قسم الحسابات', 'Employee Number': 4286, 'Full Name': 'فادى نبيل فهمى متى', 'Asset Number': 85618, 'Asset Key': '2060/02-358', 'Asset Type': 'LAP TOP', 'Asset Description': 'LAP TOP Lenovo I5 8250 RAM 20 GB SSD 500 GB DVD SN : PF1LCYXF', 'S/N': 'PF1LCYXF', Status: 'Outdated', Comments: 'مشكلة فى البطارية - بيسخن - كسر فى اطار الشاشة', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
+                        { Location: 'Ground Floor', 'Location Description': 'قسم الحسابات', 'Employee Number': 4286, 'Full Name': 'فادى نبيل فهمى متى', 'Asset Number': 30898, 'Asset Key': '2060/06-220', 'Asset Type': 'Printer', 'Asset Description': 'HP Laser Jet Pro M1530 SN : GNG891T68T', 'S/N': 'GNG891T68T', Status: 'Outdated', Comments: 'تالفه', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
+                        { Location: 'Ground Floor', 'Location Description': 'قسم الحسابات', 'Employee Number': 4290, 'Full Name': 'بيتر رؤوف عشم حنس', 'Asset Number': 84528, 'Asset Key': '2060/02-347', 'Asset Type': 'LAP TOP', 'Asset Description': 'LAP TOP Lenovo I5 8250 RAM 20 GB HD 500 GB DVD SN : PF1LCXGC', 'S/N': 'PF1LCXGC', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' }
+                    ];
+                    
+                    const firstFloorData = [
+                        { Location: 'First Floor', 'Location Description': 'قسم الدراسات', 'Employee Number': 2809, 'Full Name': 'Abanoub Fathy Shehata Geries', 'Asset Number': 15259, 'Asset Key': '2060/04-040', 'Asset Type': 'Screen', 'Asset Description': 'Dell LCD SN : 098182540010002', 'S/N': '98182540010002', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
+                        { Location: 'First Floor', 'Location Description': 'الادارة العامة للانشاءات', 'Employee Number': 836, 'Full Name': 'Peter Rafaat Labib Ghabbour', 'Asset Number': 8403, 'Asset Key': '2060/10-012', 'Asset Type': 'External Hard', 'Asset Description': 'EXTERNAL 500 GB SN : 9913019', 'S/N': '9913019', Status: '', Comments: 'غير موجود', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
+                        { Location: 'First Floor', 'Location Description': 'قسم الدراسات', 'Employee Number': 800, 'Full Name': 'Hossam Helmy Abdallah', 'Asset Number': 33072, 'Asset Key': '2060/06-257', 'Asset Type': 'Printer', 'Asset Description': 'HP DeskJet M1536 Pro All In One SN : CNG8G2K97L', 'S/N': 'CNG8G2K97L', Status: 'Needs maintenance', Comments: 'توفى .... ويستخدمها مهندس ماير ماهر', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': 'نقل الى م/ ماير ماهر' }
+                    ];
+                    
+                    const secondFloorData = [
+                        { Location: 'Second Floor', 'Location Description': 'قسم المشتريات', 'Employee Number': 2204, 'Full Name': 'Bishoy Samy Kamel Mossad', 'Asset Number': 53543, 'Asset Key': '2060/06-453', 'Asset Type': 'Printer', 'Asset Description': 'HP 426 SN : PHBLL9L27G', 'S/N': 'PHBLL9L27G', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' }
+                    ];
+                    
+                    const thirdFloorData = [
+                        { Location: 'Third Floor', 'Location Description': 'قسم النظم والمعلومات', 'Employee Number': 46, 'Full Name': 'Fayek Noshy Eshaq Guirguis', 'Asset Number': 186107, 'Asset Key': '2060/12-102', 'Asset Type': 'Access Point', 'Asset Description': 'Access Point WireLess TP Link OC200', 'S/N': '22143P8000262', Status: '', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' }
+                    ];
+                    
+                    const warehouseData = [
+                        { Location: 'Warehouse', 'Location Description': '', 'Employee Number': '', 'Full Name': '', 'Asset Number': '', 'Asset Key': '2060/01-419', 'Asset Type': 'Desk Top', 'Asset Description': 'Dell 3020 I3 3.5/3 RAM 8 GB HD 500 GB DVD', 'S/N': 'CJ63L52', Status: 'Outdated', Comments: 'Outdated', 'QR Code': '', 'Check status': 'Checked', 'تعليق المخازن': '' },
+                        { Location: 'Warehouse', 'Location Description': '', 'Employee Number': '', 'Full Name': '', 'Asset Number': '', 'Asset Key': '2060/01-470', 'Asset Type': 'Desk Top', 'Asset Description': 'Dell 3020 I3 3.5/3 RAM 8 GB HD 500 GB DVD', 'S/N': 'C378CB2', Status: 'Outdated', Comments: 'need hd ssd', 'QR Code': '', 'Check status': 'Checked', 'تعليق المخازن': '' }
+                    ];
+                    
+                    assetsData = [...groundData, ...firstFloorData, ...secondFloorData, ...thirdFloorData, ...warehouseData];
+                    
+                    assetsData = assetsData.map((asset, index) => ({
+                        id: index + 1,
+                        ...asset
+                    }));
+                    
                     localStorage.setItem('assetsData', JSON.stringify(assetsData));
-                }
-                
+                    
                     console.log('تم تحميل البيانات الافتراضية');
                 }
                 
-                // تحديد الأعمدة
                 if (assetsData.length > 0) {
                     columns = Object.keys(assetsData[0]);
                 }
 
                 refreshAvailableColumns();
+                
+                loadColumnPreferences();
                 initVisibleColumns();
 
                 filteredData = [...assetsData];
                 populateFilters();
-                loadAppState(); // تحميل الحالة المحفوظة
-                applyFilter(); // تطبيق الفلاتر المحفوظة
+                loadAppState();
+                loadSourceFileInfo();
+                applyFilter();
                 updateUI();
                 updateLastUpdate();
                 
@@ -1567,62 +1977,64 @@
         function populateFilters() {
             const t = translations[currentLang];
 
-            // حفظ القيم الحالية للفلاتر قبل إعادة البناء
             const currentLocation = currentFilters.location || 'all';
             const currentDevice = currentFilters.device || 'all';
             const currentStatus = currentFilters.status || 'all';
             const currentCheck = currentFilters.check || 'all';
 
-            // مواقع فريدة
             const locations = [...new Set(assetsData.map(a => a.Location))].filter(Boolean);
             const locationFilter = document.getElementById('locationFilter');
-            locationFilter.innerHTML = `<option value="all">${t.all}</option>` + 
-                locations.map(l => `<option value="${l}">${l}</option>`).join('');
-            if (locationFilter.querySelector(`option[value="${currentLocation}"]`)) {
-                locationFilter.value = currentLocation;
+            if (locationFilter) {
+                locationFilter.innerHTML = `<option value="all">${t.all}</option>` + 
+                    locations.map(l => `<option value="${l}">${l}</option>`).join('');
+                if (locationFilter.querySelector(`option[value="${currentLocation}"]`)) {
+                    locationFilter.value = currentLocation;
+                }
             }
 
-            // أنواع الأجهزة
             const devices = [...new Set(assetsData.map(a => a['Asset Type']))].filter(Boolean);
             const deviceFilter = document.getElementById('deviceFilter');
-            deviceFilter.innerHTML = `<option value="all">${t.all}</option>` + 
-                devices.map(d => `<option value="${d}">${d}</option>`).join('');
-            if (deviceFilter.querySelector(`option[value="${currentDevice}"]`)) {
-                deviceFilter.value = currentDevice;
+            if (deviceFilter) {
+                deviceFilter.innerHTML = `<option value="all">${t.all}</option>` + 
+                    devices.map(d => `<option value="${d}">${d}</option>`).join('');
+                if (deviceFilter.querySelector(`option[value="${currentDevice}"]`)) {
+                    deviceFilter.value = currentDevice;
+                }
             }
 
-            // الحالات
             const statuses = [...new Set(assetsData.map(a => a.Status))].filter(Boolean);
             const statusFilter = document.getElementById('statusFilter');
-            statusFilter.innerHTML = `<option value="all">${t.all}</option>` + 
-                statuses.map(s => `<option value="${s}">${s}</option>`).join('');
-            if (statusFilter.querySelector(`option[value="${currentStatus}"]`)) {
-                statusFilter.value = currentStatus;
+            if (statusFilter) {
+                statusFilter.innerHTML = `<option value="all">${t.all}</option>` + 
+                    statuses.map(s => `<option value="${s}">${s}</option>`).join('');
+                if (statusFilter.querySelector(`option[value="${currentStatus}"]`)) {
+                    statusFilter.value = currentStatus;
+                }
             }
 
-            // حالات الفحص
             const checks = [...new Set(assetsData.map(a => a['Check status']))].filter(Boolean);
             const checkFilter = document.getElementById('checkFilter');
-            checkFilter.innerHTML = `<option value="all">${t.all}</option>` + 
-                checks.map(c => `<option value="${c}">${c}</option>`).join('');
-            if (checkFilter.querySelector(`option[value="${currentCheck}"]`)) {
-                checkFilter.value = currentCheck;
+            if (checkFilter) {
+                checkFilter.innerHTML = `<option value="all">${t.all}</option>` + 
+                    checks.map(c => `<option value="${c}">${c}</option>`).join('');
+                if (checkFilter.querySelector(`option[value="${currentCheck}"]`)) {
+                    checkFilter.value = currentCheck;
+                }
             }
         }
 
         function applyFilter() {
-            const location = document.getElementById('locationFilter').value;
-            const device = document.getElementById('deviceFilter').value;
-            const status = document.getElementById('statusFilter').value;
-            const check = document.getElementById('checkFilter').value;
-            const search = document.getElementById('searchInput').value.toLowerCase();
+            const location = document.getElementById('locationFilter')?.value || 'all';
+            const device = document.getElementById('deviceFilter')?.value || 'all';
+            const status = document.getElementById('statusFilter')?.value || 'all';
+            const check = document.getElementById('checkFilter')?.value || 'all';
+            const search = document.getElementById('searchInput')?.value.toLowerCase() || '';
             
-            // حفظ الحالة
             currentFilters.location = location;
             currentFilters.device = device;
             currentFilters.status = status;
             currentFilters.check = check;
-            currentFilters.search = document.getElementById('searchInput').value;
+            currentFilters.search = document.getElementById('searchInput')?.value || '';
             saveAppState();
             
             filteredData = assetsData.filter(asset => {
@@ -1644,13 +2056,18 @@
         }
 
         function clearAllFilters() {
-            document.getElementById('locationFilter').value = 'all';
-            document.getElementById('deviceFilter').value = 'all';
-            document.getElementById('statusFilter').value = 'all';
-            document.getElementById('checkFilter').value = 'all';
-            document.getElementById('searchInput').value = '';
+            const locationFilter = document.getElementById('locationFilter');
+            const deviceFilter = document.getElementById('deviceFilter');
+            const statusFilter = document.getElementById('statusFilter');
+            const checkFilter = document.getElementById('checkFilter');
+            const searchInput = document.getElementById('searchInput');
             
-            // حفظ الحالة
+            if (locationFilter) locationFilter.value = 'all';
+            if (deviceFilter) deviceFilter.value = 'all';
+            if (statusFilter) statusFilter.value = 'all';
+            if (checkFilter) checkFilter.value = 'all';
+            if (searchInput) searchInput.value = '';
+            
             currentFilters.location = 'all';
             currentFilters.device = 'all';
             currentFilters.status = 'all';
@@ -1667,40 +2084,41 @@
         function updateUI() {
             const t = translations[currentLang];
             
-            // تحديث النصوص
-            document.getElementById('mainTitle').textContent = t.mainTitle;
-            document.getElementById('subTitle').textContent = t.subTitle;
-            document.getElementById('uploadBtnText').textContent = t.uploadBtnText;
-            document.getElementById('addColumnBtnText').textContent = t.addColumnBtnText;
-            document.getElementById('onlineSheetBtnText').textContent = t.onlineSheetBtnText;
-            document.getElementById('addBtnText').textContent = t.addBtnText;
-            document.getElementById('manageColumnsBtnText').textContent = t.manageColumnsBtnText;
-            document.getElementById('saveBtnText').textContent = t.saveBtnText;
-            document.getElementById('exportBtnText').textContent = t.exportBtnText;
-            document.getElementById('clearDataBtnText').textContent = t.clearDataBtnText;
-            document.getElementById('filterLocationLabel').textContent = t.filterLocationLabel;
-            document.getElementById('filterDeviceLabel').textContent = t.filterDeviceLabel;
-            document.getElementById('filterStatusLabel').textContent = t.filterStatusLabel;
-            document.getElementById('filterCheckLabel').textContent = t.filterCheckLabel;
-            document.getElementById('searchLabel').textContent = t.searchLabel;
-            document.getElementById('clearFiltersText').textContent = t.clearFiltersText;
-            document.getElementById('chartTitle1').textContent = t.chartTitle1;
-            document.getElementById('chartTitle2').textContent = t.chartTitle2;
-            document.getElementById('tableTitle').textContent = t.tableTitle;
+            const elements = {
+                mainTitle: t.mainTitle,
+                subTitle: t.subTitle,
+                uploadBtnText: t.uploadBtnText,
+                addColumnBtnText: t.addColumnBtnText,
+                onlineSheetBtnText: t.onlineSheetBtnText,
+                addBtnText: t.addBtnText,
+                manageColumnsBtnText: t.manageColumnsBtnText,
+                saveBtnText: t.saveBtnText,
+                syncBtnText: t.syncBtnText,
+                exportBtnText: t.exportBtnText,
+                clearDataBtnText: t.clearDataBtnText,
+                filterLocationLabel: t.filterLocationLabel,
+                filterDeviceLabel: t.filterDeviceLabel,
+                filterStatusLabel: t.filterStatusLabel,
+                filterCheckLabel: t.filterCheckLabel,
+                searchLabel: t.searchLabel,
+                clearFiltersText: t.clearFiltersText,
+                chartTitle1: t.chartTitle1,
+                chartTitle2: t.chartTitle2,
+                tableTitle: t.tableTitle,
+                rowsPerPageLabel: t.rowsPerPageLabel,
+                rowsPerPageSuffix: t.rowsPerPageSuffix,
+                printBtnText: t.printBtnText
+            };
             
-            // تحديث بطاقات KPI
+            for (const [id, text] of Object.entries(elements)) {
+                const el = document.getElementById(id);
+                if (el) el.textContent = text;
+            }
+            
             updateKPIs();
-            
-            // تحديث تصنيفات الأجهزة
             updateCategories();
-            
-            // تحديث الفلاتر النشطة
             updateActiveFilters();
-            
-            // تحديث الجدول
             updateTable();
-            
-            // تحديث الرسوم البيانية
             updateCharts();
         }
 
@@ -1711,34 +2129,35 @@
             const devices = new Set(filteredData.map(a => a['Asset Type'])).size;
             const employees = new Set(filteredData.map(a => a['Full Name'])).size;
             
-            document.getElementById('kpiCards').innerHTML = `
-                <div class="kpi-card">
-                    <div class="kpi-icon"><i class="fas fa-database"></i></div>
-                    <div class="kpi-title">${t.kpi.total}</div>
-                    <div class="kpi-value">${total}</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-icon"><i class="fas fa-map-marker-alt"></i></div>
-                    <div class="kpi-title">${t.kpi.locations}</div>
-                    <div class="kpi-value">${locations}</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-icon"><i class="fas fa-microchip"></i></div>
-                    <div class="kpi-title">${t.kpi.devices}</div>
-                    <div class="kpi-value">${devices}</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-icon"><i class="fas fa-users"></i></div>
-                    <div class="kpi-title">${t.kpi.employees}</div>
-                    <div class="kpi-value">${employees}</div>
-                </div>
-            `;
+            const kpiCards = document.getElementById('kpiCards');
+            if (kpiCards) {
+                kpiCards.innerHTML = `
+                    <div class="kpi-card">
+                        <div class="kpi-icon"><i class="fas fa-database"></i></div>
+                        <div class="kpi-title">${t.kpi.total}</div>
+                        <div class="kpi-value">${total}</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon"><i class="fas fa-map-marker-alt"></i></div>
+                        <div class="kpi-title">${t.kpi.locations}</div>
+                        <div class="kpi-value">${locations}</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon"><i class="fas fa-microchip"></i></div>
+                        <div class="kpi-title">${t.kpi.devices}</div>
+                        <div class="kpi-value">${devices}</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon"><i class="fas fa-users"></i></div>
+                        <div class="kpi-title">${t.kpi.employees}</div>
+                        <div class="kpi-value">${employees}</div>
+                    </div>
+                `;
+            }
         }
 
         function updateCategories() {
-            // دعم التصنيف الثنائي: نوع الجهاز × حالة الفحص أو الحالة
             const subField = document.getElementById('categorySubField')?.value || 'Check status';
-            // حفظ الحالة
             currentFilters.categorySubField = subField;
             saveAppState();
             const deviceMap = {};
@@ -1748,33 +2167,34 @@
                 if (!deviceMap[type]) deviceMap[type] = {};
                 deviceMap[type][sub] = (deviceMap[type][sub] || 0) + 1;
             });
-            // إجمالي لكل نوع
             const sortedDevices = Object.entries(deviceMap)
                 .map(([type, subs]) => [type, Object.values(subs).reduce((a,b)=>a+b,0), subs])
                 .sort((a, b) => b[1] - a[1])
                 .slice(0, 10);
-            // جمع كل القيم الفرعية
             const allSubs = Array.from(new Set(filteredData.map(a => a[subField] || 'غير محدد')));
-            document.getElementById('categoriesGrid').innerHTML = sortedDevices.map(([type, total, subs]) => {
-                const icon = getDeviceIcon(type);
-                // عرض عددين فقط إذا كان التصنيف الفرعي هو حالة الفحص (Checked/Not Checked)
-                let subCountsHtml = '';
-                if (subField === 'Check status') {
-                    const checked = subs['Checked'] || 0;
-                    const notChecked = subs['Not Checked'] || 0;
-                    subCountsHtml = `<div style='font-size:0.95em;margin-top:4px;'><span style='color:#10b981;font-weight:bold;'>✔️ ${checked}</span> / <span style='color:#ef4444;font-weight:bold;'>❌ ${notChecked}</span></div>`;
-                } else {
-                    subCountsHtml = allSubs.map(sub => `<span style='font-size:0.9em;margin:0 2px;'>${sub}: <b>${subs[sub]||0}</b></span>`).join(' ');
-                }
-                return `
-                    <div class="category-card" onclick="filterByDevice('${type}')">
-                        <div class="category-icon"><i class="fas ${icon}"></i></div>
-                        <div class="category-name">${type}</div>
-                        <div class="category-count">${total}</div>
-                        ${subCountsHtml}
-                    </div>
-                `;
-            }).join('');
+            
+            const categoriesGrid = document.getElementById('categoriesGrid');
+            if (categoriesGrid) {
+                categoriesGrid.innerHTML = sortedDevices.map(([type, total, subs]) => {
+                    const icon = getDeviceIcon(type);
+                    let subCountsHtml = '';
+                    if (subField === 'Check status') {
+                        const checked = subs['Checked'] || 0;
+                        const notChecked = subs['Not Checked'] || 0;
+                        subCountsHtml = `<div style='font-size:0.95em;margin-top:4px;'><span style='color:#10b981;font-weight:bold;'>✔️ ${checked}</span> / <span style='color:#ef4444;font-weight:bold;'>❌ ${notChecked}</span></div>`;
+                    } else {
+                        subCountsHtml = allSubs.map(sub => `<span style='font-size:0.9em;margin:0 2px;'>${sub}: <b>${subs[sub]||0}</b></span>`).join(' ');
+                    }
+                    return `
+                        <div class="category-card" onclick="filterByDevice('${type}')">
+                            <div class="category-icon"><i class="fas ${icon}"></i></div>
+                            <div class="category-name">${type}</div>
+                            <div class="category-count">${total}</div>
+                            ${subCountsHtml}
+                        </div>
+                    `;
+                }).join('');
+            }
         }
 
         function getDeviceIcon(type) {
@@ -1797,103 +2217,266 @@
         }
 
         function filterByDevice(device) {
-            document.getElementById('deviceFilter').value = device;
-            applyFilter();
+            const deviceFilter = document.getElementById('deviceFilter');
+            if (deviceFilter) {
+                deviceFilter.value = device;
+                applyFilter();
+            }
         }
 
         function updateActiveFilters() {
             const filters = [];
             
-            const location = document.getElementById('locationFilter').value;
-            if (location !== 'all') {
+            const location = document.getElementById('locationFilter')?.value;
+            if (location && location !== 'all') {
                 filters.push(`<span class="filter-badge"><i class="fas fa-map-marker-alt"></i> ${location} <i class="fas fa-times" onclick="removeFilter('location')"></i></span>`);
             }
             
-            const device = document.getElementById('deviceFilter').value;
-            if (device !== 'all') {
+            const device = document.getElementById('deviceFilter')?.value;
+            if (device && device !== 'all') {
                 filters.push(`<span class="filter-badge"><i class="fas fa-microchip"></i> ${device} <i class="fas fa-times" onclick="removeFilter('device')"></i></span>`);
             }
             
-            const status = document.getElementById('statusFilter').value;
-            if (status !== 'all') {
+            const status = document.getElementById('statusFilter')?.value;
+            if (status && status !== 'all') {
                 filters.push(`<span class="filter-badge"><i class="fas fa-info-circle"></i> ${status} <i class="fas fa-times" onclick="removeFilter('status')"></i></span>`);
             }
             
-            const check = document.getElementById('checkFilter').value;
-            if (check !== 'all') {
+            const check = document.getElementById('checkFilter')?.value;
+            if (check && check !== 'all') {
                 filters.push(`<span class="filter-badge"><i class="fas fa-check-circle"></i> ${check} <i class="fas fa-times" onclick="removeFilter('check')"></i></span>`);
             }
             
-            const search = document.getElementById('searchInput').value;
+            const search = document.getElementById('searchInput')?.value;
             if (search) {
                 filters.push(`<span class="filter-badge"><i class="fas fa-search"></i> "${search}" <i class="fas fa-times" onclick="removeFilter('search')"></i></span>`);
             }
             
-            document.getElementById('activeFilters').innerHTML = filters.join('');
+            const activeFilters = document.getElementById('activeFilters');
+            if (activeFilters) {
+                activeFilters.innerHTML = filters.join('');
+            }
         }
 
         function removeFilter(type) {
-            if (type === 'location') document.getElementById('locationFilter').value = 'all';
-            if (type === 'device') document.getElementById('deviceFilter').value = 'all';
-            if (type === 'status') document.getElementById('statusFilter').value = 'all';
-            if (type === 'check') document.getElementById('checkFilter').value = 'all';
-            if (type === 'search') document.getElementById('searchInput').value = '';
+            if (type === 'location') {
+                const locationFilter = document.getElementById('locationFilter');
+                if (locationFilter) locationFilter.value = 'all';
+            }
+            if (type === 'device') {
+                const deviceFilter = document.getElementById('deviceFilter');
+                if (deviceFilter) deviceFilter.value = 'all';
+            }
+            if (type === 'status') {
+                const statusFilter = document.getElementById('statusFilter');
+                if (statusFilter) statusFilter.value = 'all';
+            }
+            if (type === 'check') {
+                const checkFilter = document.getElementById('checkFilter');
+                if (checkFilter) checkFilter.value = 'all';
+            }
+            if (type === 'search') {
+                const searchInput = document.getElementById('searchInput');
+                if (searchInput) searchInput.value = '';
+            }
             
             applyFilter();
         }
 
-        // ==================== تحديث الجدول ====================
+        // دالة لتبديل القيم boolean
+        function toggleBooleanValue(assetId, columnName, checked) {
+            const assetIndex = assetsData.findIndex(a => a.id === assetId);
+            if (assetIndex === -1) return;
+            
+            const oldValue = assetsData[assetIndex][columnName];
+            const newValue = checked;
+            
+            assetsData[assetIndex][columnName] = newValue;
+            
+            const filteredIndex = filteredData.findIndex(a => a.id === assetId);
+            if (filteredIndex !== -1) {
+                filteredData[filteredIndex][columnName] = newValue;
+            }
+            
+            updateTable();
+            saveToLocalStorage();
+            
+            if (sourceFile.type && sourceFile.connectionType === 'sync') {
+                syncWithSourceFile().catch(e => console.error('فشل المزامنة:', e));
+            }
+            
+            showAlert(`تم تحديث ${getColumnLabel(columnName)}`, 'success');
+        }
+
+        // ==================== تحديث الجدول مع دعم التعديل المباشر ====================
         function updateTable() {
             const t = translations[currentLang];
             const start = (currentPage - 1) * rowsPerPage;
-            const end = start + rowsPerPage;
-            const pageData = filteredData.slice(start, end);
+            const pageData = rowsPerPage === 0 ? filteredData : filteredData.slice(start, start + rowsPerPage);
 
-            // تحديث رأس الجدول حسب الأعمدة المفعلة
-            const headers = visibleColumns.map(col => getColumnLabel(col));
-            document.getElementById('tableHeader').innerHTML = headers.map(h => `<th>${h}</th>`).join('');
+            const headers = visibleColumns.map(col => `<th>${getColumnLabel(col)}</th>`);
+            const tableHeader = document.getElementById('tableHeader');
+            if (tableHeader) {
+                tableHeader.innerHTML = headers.join('');
+            }
 
-            // تحديث جسم الجدول
-            document.getElementById('tableBody').innerHTML = pageData.map((asset, index) => {
-                const rowIndex = start + index + 1;
-                const statusClass = getStatusClass(asset.Status);
+            const tableBody = document.getElementById('tableBody');
+            if (tableBody) {
+                tableBody.innerHTML = pageData.map((asset, index) => {
+                    const rowIndex = start + index + 1;
 
-                const rowCells = visibleColumns.map(col => {
-                    if (col === '__actions') {
-                        return `
-                            <td>
-                                <div class="action-buttons">
-                                    <button class="btn-edit" onclick="editAsset(${asset.id})" title="${t.edit}"><i class="fas fa-edit"></i></button>
-                                    <button class="btn-barcode" onclick="printBarcode(${asset.id})" title="${t.barcode}"><i class="fas fa-barcode"></i></button>
-                                    <button class="btn-delete" onclick="deleteAsset(${asset.id})" title="${t.delete}"><i class="fas fa-trash"></i></button>
-                                </div>
-                            </td>
-                        `;
-                    }
+                    const rowCells = visibleColumns.map(col => {
+                        if (col === '__actions') {
+                            return `
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-barcode" onclick="printBarcode(${asset.id})" title="${t.barcode}"><i class="fas fa-barcode"></i></button>
+                                        <button class="btn-delete" onclick="deleteAsset(${asset.id})" title="${t.delete}"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </td>
+                            `;
+                        }
 
-                    let value = asset[col];
-                    if (col === 'Status') {
-                        value = `<span class="status-badge ${statusClass}">${value || '-'}</span>`;
-                    } else if (col === 'Check status') {
-                        const cls = value === 'Checked' ? 'status-good' : 'status-not-checked';
-                        value = `<span class="status-badge ${cls}">${value || '-'}</span>`;
-                    } else {
-                        value = value || '-';
-                    }
+                        let value = asset[col];
+                        
+                        const isBoolean = typeof value === 'boolean' || 
+                                         value === 'true' || value === 'false' ||
+                                         value === true || value === false;
+                        
+                        if (isBoolean) {
+                            const boolValue = value === true || value === 'true';
+                            
+                            return `<td style="text-align: center;">
+                                <input type="checkbox" 
+                                       ${boolValue ? 'checked' : ''} 
+                                       onchange="toggleBooleanValue(${asset.id}, '${col}', this.checked)"
+                                       style="width: 20px; height: 20px; cursor: pointer;"
+                                       title="انقر لتغيير القيمة">
+                            </td>`;
+                        }
+                        
+                        if (col === 'Status') {
+                            const statusClass = getStatusClass(value);
+                            value = `<span class="status-badge ${statusClass}">${value || '-'}</span>`;
+                        } else if (col === 'Check status') {
+                            const cls = value === 'Checked' ? 'status-good' : 'status-not-checked';
+                            value = `<span class="status-badge ${cls}">${value || '-'}</span>`;
+                        } else {
+                            value = value || '-';
+                        }
 
-                    return `<td>${value}</td>`;
+                        return `<td ondblclick="startEditing(${asset.id}, '${col}')" style="cursor: pointer;" title="انقر مرتين للتعديل">${value}</td>`;
+                    }).join('');
+
+                    return `<tr data-id="${asset.id}">${rowCells}</tr>`;
                 }).join('');
+            }
 
-                return `
-                    <tr>
-                        ${rowCells}
-                    </tr>
-                `;
-            }).join('');
-
-            // تحديث الترقيم
             updatePagination();
         }
+
+        function startEditing(assetId, columnName) {
+            if (columnName === '__actions') return;
+            
+            const asset = assetsData.find(a => a.id === assetId);
+            if (!asset) return;
+            
+            const value = asset[columnName];
+            const isBoolean = typeof value === 'boolean' || 
+                             value === 'true' || value === 'false' ||
+                             value === true || value === false;
+            
+            if (isBoolean) {
+                return;
+            }
+            
+            const row = document.querySelector(`tr[data-id="${assetId}"]`);
+            if (!row) return;
+            
+            const cells = row.querySelectorAll('td');
+            const colIndex = visibleColumns.indexOf(columnName);
+            if (colIndex === -1 || colIndex >= cells.length) return;
+            
+            const cell = cells[colIndex];
+            const currentValue = asset[columnName] || '';
+            
+            let inputHtml = '';
+            
+            const existingValues = [...new Set(assetsData.map(a => a[columnName]).filter(Boolean))];
+            
+            if (columnName === 'Status') {
+                inputHtml = `<select class="edit-select" onchange="saveCellEdit(${assetId}, '${columnName}', this.value)" onblur="this.parentElement.innerHTML=this.value">
+                    <option value="Good" ${currentValue === 'Good' ? 'selected' : ''}>Good</option>
+                    <option value="Needs maintenance" ${currentValue === 'Needs maintenance' ? 'selected' : ''}>Needs maintenance</option>
+                    <option value="Outdated" ${currentValue === 'Outdated' ? 'selected' : ''}>Outdated</option>
+                    <option value="" ${!currentValue ? 'selected' : ''}>غير محدد</option>
+                </select>`;
+            } else if (columnName === 'Check status') {
+                inputHtml = `<select class="edit-select" onchange="saveCellEdit(${assetId}, '${columnName}', this.value)" onblur="this.parentElement.innerHTML=this.value">
+                    <option value="Checked" ${currentValue === 'Checked' ? 'selected' : ''}>Checked</option>
+                    <option value="Not Checked" ${currentValue === 'Not Checked' ? 'selected' : ''}>Not Checked</option>
+                </select>`;
+            } else if (columnName === 'Location' || columnName === 'Asset Type') {
+                const options = [...new Set(assetsData.map(a => a[columnName]).filter(Boolean))];
+                inputHtml = `<select class="edit-select" onchange="saveCellEdit(${assetId}, '${columnName}', this.value)" onblur="this.parentElement.innerHTML=this.value">
+                    <option value="">اختر...</option>
+                    ${options.map(opt => `<option value="${opt}" ${currentValue === opt ? 'selected' : ''}>${opt}</option>`).join('')}
+                </select>`;
+            } else {
+                inputHtml = `<input type="text" class="edit-input" value="${String(currentValue).replace(/"/g, '&quot;')}" 
+                    onblur="saveCellEdit(${assetId}, '${columnName}', this.value)" 
+                    onkeypress="if(event.key==='Enter'){saveCellEdit(${assetId}, '${columnName}', this.value)}">`;
+            }
+            
+            const oldValue = cell.innerHTML;
+            cell.innerHTML = inputHtml;
+            cell.classList.add('editing');
+            
+            const input = cell.querySelector('input, select');
+            if (input) {
+                input.focus();
+                if (input.tagName === 'INPUT') {
+                    input.select();
+                }
+            }
+            
+            editingCell = { element: cell, oldValue: oldValue, assetId: assetId, columnName: columnName };
+        }
+
+        function saveCellEdit(assetId, columnName, newValue) {
+            const assetIndex = assetsData.findIndex(a => a.id === assetId);
+            if (assetIndex === -1) return;
+            
+            const oldValue = assetsData[assetIndex][columnName];
+            assetsData[assetIndex][columnName] = newValue;
+            
+            const filteredIndex = filteredData.findIndex(a => a.id === assetId);
+            if (filteredIndex !== -1) {
+                filteredData[filteredIndex][columnName] = newValue;
+            }
+            
+            updateTable();
+            saveToLocalStorage();
+            
+            if (sourceFile.type && sourceFile.connectionType === 'sync') {
+                syncWithSourceFile().catch(e => console.error('فشل المزامنة:', e));
+            }
+            
+            if (oldValue !== newValue) {
+                showAlert(`تم تحديث ${getColumnLabel(columnName)}`, 'success');
+            }
+            
+            editingCell = null;
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && editingCell) {
+                const cell = editingCell.element;
+                cell.innerHTML = editingCell.oldValue;
+                cell.classList.remove('editing');
+                editingCell = null;
+            }
+        });
 
         function getStatusClass(status) {
             if (!status) return 'status-not-checked';
@@ -1904,57 +2487,110 @@
         }
 
         function updatePagination() {
-            const totalPages = Math.ceil(filteredData.length / rowsPerPage);
-            let paginationHtml = '';
+            const paginationEl = document.getElementById('pagination');
+            if (!paginationEl) return;
             
-            for (let i = 1; i <= totalPages; i++) {
-                paginationHtml += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+            if (rowsPerPage === 0) {
+                paginationEl.innerHTML = '';
+                return;
             }
-            
-            document.getElementById('pagination').innerHTML = paginationHtml;
+            const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+            if (totalPages <= 1) {
+                paginationEl.innerHTML = '';
+                return;
+            }
+
+            const maxButtons = 7;
+            const showRange = (page, total, max) => {
+                const half = Math.floor(max / 2);
+                let start = Math.max(1, page - half);
+                let end = Math.min(total, page + half);
+                if (end - start + 1 < max) {
+                    if (start === 1) {
+                        end = Math.min(total, start + max - 1);
+                    } else if (end === total) {
+                        start = Math.max(1, end - max + 1);
+                    }
+                }
+                return { start, end };
+            };
+
+            const { start, end } = showRange(currentPage, totalPages, maxButtons);
+            let html = '';
+
+            const addButton = (page, label, extraClass = '') => {
+                html += `<button class="page-btn ${page === currentPage ? 'active' : ''} ${extraClass}" onclick="goToPage(${page})">${label}</button>`;
+            };
+
+            if (currentPage > 1) {
+                addButton(currentPage - 1, '◀');
+            }
+
+            if (start > 1) {
+                addButton(1, '1');
+                if (start > 2) html += `<span class="ellipsis">…</span>`;
+            }
+
+            for (let i = start; i <= end; i++) {
+                addButton(i, i);
+            }
+
+            if (end < totalPages) {
+                if (end < totalPages - 1) html += `<span class="ellipsis">…</span>`;
+                addButton(totalPages, totalPages);
+            }
+
+            if (currentPage < totalPages) {
+                addButton(currentPage + 1, '▶');
+            }
+
+            paginationEl.innerHTML = html;
         }
 
         function goToPage(page) {
+            const totalPages = rowsPerPage === 0 ? 1 : Math.ceil(filteredData.length / rowsPerPage);
+            if (page < 1) page = 1;
+            if (page > totalPages) page = totalPages;
             currentPage = page;
+            updateTable();
+        }
+
+        function changeRowsPerPage(value) {
+            const parsed = parseInt(value, 10);
+            rowsPerPage = Number.isNaN(parsed) ? 20 : parsed;
+            currentFilters.rowsPerPage = rowsPerPage;
+            currentPage = 1;
+            saveAppState();
             updateTable();
         }
 
         // ==================== تحديث الرسوم البيانية ====================
         function updateCharts() {
-            // تدمير الرسوم البيانية السابقة إذا وجدت
             if (window.barChart) window.barChart.destroy();
             if (window.pieChart) window.pieChart.destroy();
-            // دعم التصنيف الثنائي
+            
             const barField = document.getElementById('barChartField')?.value || 'Location';
             const pieField = document.getElementById('pieChartField')?.value || 'Asset Type';
             const barSubField = document.getElementById('barChartSubField')?.value || 'Check status';
-            // حفظ الحالة
+            
             currentFilters.barChartField = barField;
             currentFilters.barChartSubField = barSubField;
             currentFilters.pieChartField = pieField;
             saveAppState();
-            // بيانات الرسم العمودي ثنائي التصنيف
+            
             let barData = {};
             let barSubKeys = [];
-            if (document.getElementById('barChartSubField')) {
-                // ثنائي التصنيف
-                filteredData.forEach(asset => {
-                    const key = asset[barField] || 'غير محدد';
-                    const sub = asset[barSubField] || 'غير محدد';
-                    if (!barData[key]) barData[key] = {};
-                    barData[key][sub] = (barData[key][sub] || 0) + 1;
-                });
-                barSubKeys = Array.from(new Set(filteredData.map(a => a[barSubField] || 'غير محدد')));
-            } else {
-                // تصنيف واحد
-                filteredData.forEach(asset => {
-                    const key = asset[barField] || 'غير محدد';
-                    barData[key] = (barData[key] || 0) + 1;
-                });
-            }
-            const barCtx = document.getElementById('mainBarChart').getContext('2d');
-            if (document.getElementById('barChartSubField')) {
-                // رسم ثنائي التصنيف
+            
+            filteredData.forEach(asset => {
+                const key = asset[barField] || 'غير محدد';
+                const sub = asset[barSubField] || 'غير محدد';
+                if (!barData[key]) barData[key] = {};
+                barData[key][sub] = (barData[key][sub] || 0) + 1;
+            });
+            barSubKeys = Array.from(new Set(filteredData.map(a => a[barSubField] || 'غير محدد')));
+            
+            const barCtx = document.getElementById('mainBarChart')?.getContext('2d');
+            if (barCtx) {
                 window.barChart = new Chart(barCtx, {
                     type: 'bar',
                     data: {
@@ -1994,29 +2630,34 @@
                         }
                     }
                 });
-            } else {
-                // رسم تصنيف واحد
-                window.barChart = new Chart(barCtx, {
-                    type: 'bar',
+            }
+            
+            const pieData = {};
+            filteredData.forEach(asset => {
+                const key = asset[pieField] || 'غير محدد';
+                pieData[key] = (pieData[key] || 0) + 1;
+            });
+            const colors = ['#1e3c72', '#2a5298', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6b7280'];
+            const pieCtx = document.getElementById('devicePieChart')?.getContext('2d');
+            if (pieCtx) {
+                window.pieChart = new Chart(pieCtx, {
+                    type: 'pie',
                     data: {
-                        labels: Object.keys(barData),
+                        labels: Object.keys(pieData),
                         datasets: [{
-                            label: 'عدد الأجهزة',
-                            data: Object.values(barData),
-                            backgroundColor: '#1e3c72',
-                            borderColor: '#2a5298',
-                            borderWidth: 2
+                            data: Object.values(pieData),
+                            backgroundColor: colors.slice(0, Object.keys(pieData).length)
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
-                            legend: { display: false },
+                            legend: { position: 'bottom' },
                             tooltip: {
                                 callbacks: {
                                     label: function(context) {
-                                        return `${context.label}: ${context.parsed.y} جهاز`;
+                                        return `${context.label}: ${context.parsed} جهاز`;
                                     }
                                 }
                             }
@@ -2025,59 +2666,15 @@
                             if (elements.length > 0) {
                                 const idx = elements[0].index;
                                 const label = this.data.labels[idx];
-                                const details = filteredData.filter(asset => (asset[barField] || 'غير محدد') === label);
+                                const details = filteredData.filter(asset => (asset[pieField] || 'غير محدد') === label);
                                 showChartDetails(label, details);
                             }
-                        },
-                        scales: {
-                            y: { beginAtZero: true, ticks: { stepSize: 1 } }
                         }
                     }
                 });
             }
-            // بيانات الرسم الدائري
-            const pieData = {};
-            filteredData.forEach(asset => {
-                const key = asset[pieField] || 'غير محدد';
-                pieData[key] = (pieData[key] || 0) + 1;
-            });
-            const colors = ['#1e3c72', '#2a5298', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6b7280'];
-            const pieCtx = document.getElementById('devicePieChart').getContext('2d');
-            window.pieChart = new Chart(pieCtx, {
-                type: 'pie',
-                data: {
-                    labels: Object.keys(pieData),
-                    datasets: [{
-                        data: Object.values(pieData),
-                        backgroundColor: colors.slice(0, Object.keys(pieData).length)
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'bottom' },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return `${context.label}: ${context.parsed} جهاز`;
-                                }
-                            }
-                        }
-                    },
-                    onClick: function(evt, elements) {
-                        if (elements.length > 0) {
-                            const idx = elements[0].index;
-                            const label = this.data.labels[idx];
-                            const details = filteredData.filter(asset => (asset[pieField] || 'غير محدد') === label);
-                            showChartDetails(label, details);
-                        }
-                    }
-                }
-            });
         }
 
-        // نافذة تفاصيل التصنيف
         function showChartDetails(label, details) {
             let html = `<div style='padding:16px;max-height:400px;overflow:auto;direction:rtl;'>`;
             html += `<h3 style='margin-bottom:10px;'>${label} - عدد: ${details.length}</h3>`;
@@ -2102,20 +2699,44 @@
             modal.innerHTML = `<div style='background:#fff;max-width:900px;margin:40px auto;padding:20px;border-radius:12px;position:relative;'>${html}<button onclick='this.parentNode.parentNode.remove()' style='position:absolute;top:10px;left:10px;font-size:1.5em;'>×</button></div>`;
             document.body.appendChild(modal);
         }
-// تحديث الرسوم عند تغيير التصنيف
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('barChartField').addEventListener('change', updateCharts);
-    document.getElementById('barChartSubField').addEventListener('change', updateCharts);
-    document.getElementById('pieChartField').addEventListener('change', updateCharts);
-    document.getElementById('categorySubField').addEventListener('change', function() {
-        updateCategories();
-    });
-});
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const barChartField = document.getElementById('barChartField');
+            const barChartSubField = document.getElementById('barChartSubField');
+            const pieChartField = document.getElementById('pieChartField');
+            const categorySubField = document.getElementById('categorySubField');
+            
+            if (barChartField) barChartField.addEventListener('change', updateCharts);
+            if (barChartSubField) barChartSubField.addEventListener('change', updateCharts);
+            if (pieChartField) pieChartField.addEventListener('change', updateCharts);
+            if (categorySubField) categorySubField.addEventListener('change', function() {
+                updateCategories();
+            });
+        });
 
         // ==================== دوال إدارة البيانات ====================
         function handleFileUpload(input) {
             const file = input.files[0];
             if (!file) return;
+            
+            sourceFile.type = 'local';
+            sourceFile.name = file.name;
+            
+            if (window.showSaveFilePicker) {
+                try {
+                    window.showSaveFilePicker({
+                        suggestedName: file.name,
+                        types: [{
+                            description: 'Excel Files',
+                            accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] }
+                        }]
+                    }).then(handle => {
+                        sourceFile.fileHandle = handle;
+                    }).catch(() => {});
+                } catch (e) {
+                    console.log('File System Access API غير متاح');
+                }
+            }
             
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -2126,7 +2747,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     let allData = [];
                     let idCounter = assetsData.length + 1;
                     
-                    // قراءة جميع الشيتات
                     workbook.SheetNames.forEach(sheetName => {
                         const worksheet = workbook.Sheets[sheetName];
                         const jsonData = XLSX.utils.sheet_to_json(worksheet);
@@ -2144,7 +2764,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         assetsData = [...assetsData, ...allData];
                         console.log('البيانات بعد التحميل:', assetsData);
                         console.log('نوع البيانات:', typeof assetsData, 'هل مصفوفة:', Array.isArray(assetsData));
-                        // حفظ البيانات في localStorage
                         saveToLocalStorage();
                         console.log('تم حفظ البيانات في localStorage');
                         refreshAvailableColumns();
@@ -2152,6 +2771,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         filteredData = [...assetsData];
                         populateFilters();
                         updateUI();
+                        saveSourceFileInfo();
+                        updateFileStatus();
                         showAlert(`تم تحميل ${allData.length} سجل من ${workbook.SheetNames.length} شيتات`, 'success');
                     } else {
                         showAlert('لم يتم العثور على بيانات في الملف', 'error');
@@ -2163,7 +2784,7 @@ document.addEventListener('DOMContentLoaded', function() {
             };
             
             reader.readAsArrayBuffer(file);
-            input.value = ''; // إعادة تعيين input
+            input.value = '';
         }
         
         function clearAllData() {
@@ -2174,18 +2795,23 @@ document.addEventListener('DOMContentLoaded', function() {
             currentPage = 1;
             extraColumns = [];
             
-            // إيقاف المزامنة التلقائية
             onlineSheets.forEach(sheet => {
                 if (sheet.syncInterval) clearInterval(sheet.syncInterval);
             });
             onlineSheets = [];
             
             const t = translations[currentLang];
-            document.getElementById('locationFilter').innerHTML = `<option value="all">${t.all}</option>`;
-            document.getElementById('deviceFilter').innerHTML = `<option value="all">${t.all}</option>`;
-            document.getElementById('statusFilter').innerHTML = `<option value="all">${t.all}</option>`;
-            document.getElementById('checkFilter').innerHTML = `<option value="all">${t.all}</option>`;
-            document.getElementById('searchInput').value = '';
+            const locationFilter = document.getElementById('locationFilter');
+            const deviceFilter = document.getElementById('deviceFilter');
+            const statusFilter = document.getElementById('statusFilter');
+            const checkFilter = document.getElementById('checkFilter');
+            const searchInput = document.getElementById('searchInput');
+            
+            if (locationFilter) locationFilter.innerHTML = `<option value="all">${t.all}</option>`;
+            if (deviceFilter) deviceFilter.innerHTML = `<option value="all">${t.all}</option>`;
+            if (statusFilter) statusFilter.innerHTML = `<option value="all">${t.all}</option>`;
+            if (checkFilter) checkFilter.innerHTML = `<option value="all">${t.all}</option>`;
+            if (searchInput) searchInput.value = '';
             
             updateUI();
             localStorage.removeItem('assetsData');
@@ -2195,13 +2821,12 @@ document.addEventListener('DOMContentLoaded', function() {
         function showAddModal() {
             const t = translations[currentLang];
             editingId = null;
-            document.getElementById('modalTitle').textContent = t.modalAdd;
+            const modalTitle = document.getElementById('modalTitle');
+            if (modalTitle) modalTitle.textContent = t.modalAdd;
             
-            // الحصول على المواقع والأنواع الموجودة
             const existingLocations = [...new Set(assetsData.map(a => a.Location))].filter(Boolean);
             const existingTypes = [...new Set(assetsData.map(a => a['Asset Type']))].filter(Boolean);
             
-            // إنشاء نموذج الإضافة
             const formHtml = `
                 <div class="form-group">
                     <label class="form-label">الموقع <span style="color: #ef4444;">*</span></label>
@@ -2283,23 +2908,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             `;
             
-            document.getElementById('modalForm').innerHTML = formHtml;
-            document.getElementById('assetModal').classList.add('active');
+            const modalForm = document.getElementById('modalForm');
+            if (modalForm) modalForm.innerHTML = formHtml;
+            
+            const assetModal = document.getElementById('assetModal');
+            if (assetModal) assetModal.classList.add('active');
         }
 
         function editAsset(id) {
             const t = translations[currentLang];
             const asset = assetsData.find(a => a.id === id);
             if (!asset) return;
-            
             editingId = id;
-            document.getElementById('modalTitle').textContent = t.modalEdit;
             
-            // الحصول على المواقع والأنواع الموجودة
+            const modalTitle = document.getElementById('modalTitle');
+            if (modalTitle) modalTitle.textContent = t.modalEdit;
+            
             const existingLocations = [...new Set(assetsData.map(a => a.Location))].filter(Boolean);
             const existingTypes = [...new Set(assetsData.map(a => a['Asset Type']))].filter(Boolean);
             
-            // إنشاء نموذج التعديل مع تعبئة البيانات
             const formHtml = `
                 <div class="form-group">
                     <label class="form-label">الموقع <span style="color: #ef4444;">*</span></label>
@@ -2381,29 +3008,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             `;
             
-            document.getElementById('modalForm').innerHTML = formHtml;
-            document.getElementById('assetModal').classList.add('active');
+            const modalForm = document.getElementById('modalForm');
+            if (modalForm) modalForm.innerHTML = formHtml;
+            
+            const assetModal = document.getElementById('assetModal');
+            if (assetModal) assetModal.classList.add('active');
         }
 
         function saveAsset() {
-            // الحصول على القيم
-            let location = document.getElementById('modalLocation').value;
-            const locationNew = document.getElementById('modalLocationNew').value.trim();
+            let location = document.getElementById('modalLocation')?.value;
+            const locationNew = document.getElementById('modalLocationNew')?.value.trim();
             if (locationNew) {
                 location = locationNew;
             }
             
-            let assetType = document.getElementById('modalAssetType').value;
-            const assetTypeNew = document.getElementById('modalAssetTypeNew').value.trim();
+            let assetType = document.getElementById('modalAssetType')?.value;
+            const assetTypeNew = document.getElementById('modalAssetTypeNew')?.value.trim();
             if (assetTypeNew) {
                 assetType = assetTypeNew;
             }
             
-            const assetNum = document.getElementById('modalAssetNum').value.trim();
-            const assetDesc = document.getElementById('modalAssetDesc').value.trim();
-            const sn = document.getElementById('modalSN').value.trim();
+            const assetNum = document.getElementById('modalAssetNum')?.value.trim();
+            const assetDesc = document.getElementById('modalAssetDesc')?.value.trim();
+            const sn = document.getElementById('modalSN')?.value.trim();
             
-            // التحقق من الحقول المطلوبة
             if (!location) {
                 showAlert('يجب إدخال الموقع', 'error');
                 return;
@@ -2425,7 +3053,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            // التحقق من عدم تكرار الرقم التسلسلي (إلا في حالة التعديل)
             if (!editingId) {
                 const existingSN = assetsData.find(a => a['S/N'] === sn);
                 if (existingSN) {
@@ -2436,29 +3063,27 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const assetData = {
                 Location: location,
-                'Location Description': document.getElementById('modalLocationDesc').value,
-                'Employee Number': document.getElementById('modalEmpNum').value,
-                'Full Name': document.getElementById('modalFullName').value,
+                'Location Description': document.getElementById('modalLocationDesc')?.value || '',
+                'Employee Number': document.getElementById('modalEmpNum')?.value || '',
+                'Full Name': document.getElementById('modalFullName')?.value || '',
                 'Asset Number': assetNum,
-                'Asset Key': document.getElementById('modalAssetKey').value,
+                'Asset Key': document.getElementById('modalAssetKey')?.value || '',
                 'Asset Type': assetType,
                 'Asset Description': assetDesc,
                 'S/N': sn,
-                Status: document.getElementById('modalStatus').value,
-                Comments: document.getElementById('modalComments').value,
-                'QR Code': document.getElementById('modalQR').value,
-                'Check status': document.getElementById('modalCheck').value,
-                'تعليق المخازن': document.getElementById('modalWarehouse').value
+                Status: document.getElementById('modalStatus')?.value || '',
+                Comments: document.getElementById('modalComments')?.value || '',
+                'QR Code': document.getElementById('modalQR')?.value || '',
+                'Check status': document.getElementById('modalCheck')?.value || 'Not Checked',
+                'تعليق المخازن': document.getElementById('modalWarehouse')?.value || ''
             };
             
             if (editingId) {
-                // تعديل جهاز موجود
                 const index = assetsData.findIndex(a => a.id === editingId);
                 if (index !== -1) {
                     assetsData[index] = { ...assetsData[index], ...assetData };
                 }
             } else {
-                // إضافة جهاز جديد
                 const newId = Math.max(...assetsData.map(a => a.id), 0) + 1;
                 assetsData.push({ id: newId, ...assetData });
             }
@@ -2467,13 +3092,19 @@ document.addEventListener('DOMContentLoaded', function() {
             closeModal();
             populateFilters();
             updateUI();
-            applyFilter(); // إعادة تطبيق الفلاتر على البيانات المحدثة
+            applyFilter();
             saveToLocalStorage();
+            
+            if (sourceFile.type && sourceFile.connectionType === 'sync') {
+                syncWithSourceFile().catch(e => console.error('فشل المزامنة:', e));
+            }
+            
             showAlert('تم حفظ البيانات بنجاح', 'success');
         }
 
         function closeModal() {
-            document.getElementById('assetModal').classList.remove('active');
+            const assetModal = document.getElementById('assetModal');
+            if (assetModal) assetModal.classList.remove('active');
             editingId = null;
         }
 
@@ -2485,35 +3116,44 @@ document.addEventListener('DOMContentLoaded', function() {
             filteredData = filteredData.filter(a => a.id !== id);
             
             populateFilters();
-            applyFilter(); // إعادة تطبيق الفلاتر
+            applyFilter();
             updateUI();
             saveToLocalStorage();
+            
+            if (sourceFile.type && sourceFile.connectionType === 'sync') {
+                syncWithSourceFile().catch(e => console.error('فشل المزامنة:', e));
+            }
+            
             showAlert('تم حذف الجهاز', 'info');
         }
 
         function toggleLocationInput() {
             const select = document.getElementById('modalLocation');
             const input = document.getElementById('modalLocationNew');
-            if (input.style.display === 'none') {
-                input.style.display = 'block';
-                select.value = '';
-                input.focus();
-            } else {
-                input.style.display = 'none';
-                input.value = '';
+            if (input && select) {
+                if (input.style.display === 'none') {
+                    input.style.display = 'block';
+                    select.value = '';
+                    input.focus();
+                } else {
+                    input.style.display = 'none';
+                    input.value = '';
+                }
             }
         }
 
         function toggleTypeInput() {
             const select = document.getElementById('modalAssetType');
             const input = document.getElementById('modalAssetTypeNew');
-            if (input.style.display === 'none') {
-                input.style.display = 'block';
-                select.value = '';
-                input.focus();
-            } else {
-                input.style.display = 'none';
-                input.value = '';
+            if (input && select) {
+                if (input.style.display === 'none') {
+                    input.style.display = 'block';
+                    select.value = '';
+                    input.focus();
+                } else {
+                    input.style.display = 'none';
+                    input.value = '';
+                }
             }
         }
 
@@ -2534,6 +3174,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     updateUI();
                 } catch (e) {
                     console.error('خطأ في تحميل البيانات المحفوظة');
+                    const oldData = localStorage.getItem('assetsDataOld');
+                    if (oldData) assetsData = JSON.parse(oldData);
                 }
             }
         }
@@ -2650,7 +3292,10 @@ document.addEventListener('DOMContentLoaded', function() {
         function updateLastUpdate() {
             const now = new Date();
             const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-            document.getElementById('lastUpdate').textContent = now.toLocaleDateString('ar-EG', options);
+            const lastUpdate = document.getElementById('lastUpdate');
+            if (lastUpdate) {
+                lastUpdate.textContent = now.toLocaleDateString('ar-EG', options);
+            }
         }
 
         function showAlert(message, type = 'info') {
@@ -2665,201 +3310,274 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // ==================== إدارة الأعمدة الإضافية ====================
+        function showColumnMapper() {
+            const modal = document.getElementById('columnMapperModal');
+            if (modal) modal.classList.add('active');
+        }
 
-        // Make toolbar handler functions globally accessible
-        window.showColumnMapper = function() {
-            document.getElementById('columnMapperModal').classList.add('active');
-        };
-        window.closeColumnMapper = function() {
-            document.getElementById('columnMapperModal').classList.remove('active');
-            document.getElementById('newColumnName').value = '';
-            document.getElementById('columnType').value = 'text';
-            document.getElementById('selectOptions').value = '';
-            document.getElementById('selectOptionsGroup').style.display = 'none';
-        };
+        function closeColumnMapper() {
+            const modal = document.getElementById('columnMapperModal');
+            if (modal) modal.classList.remove('active');
+            
+            const newColumnName = document.getElementById('newColumnName');
+            const columnType = document.getElementById('columnType');
+            const selectOptions = document.getElementById('selectOptions');
+            const selectOptionsGroup = document.getElementById('selectOptionsGroup');
+            
+            if (newColumnName) newColumnName.value = '';
+            if (columnType) columnType.value = 'text';
+            if (selectOptions) selectOptions.value = '';
+            if (selectOptionsGroup) selectOptionsGroup.style.display = 'none';
+        }
+
         document.getElementById('columnType')?.addEventListener('change', function() {
             const selectGroup = document.getElementById('selectOptionsGroup');
-            selectGroup.style.display = this.value === 'select' ? 'block' : 'none';
+            if (selectGroup) {
+                selectGroup.style.display = this.value === 'select' ? 'block' : 'none';
+            }
         });
-        window.addNewColumn = function() {
-            const columnName = document.getElementById('newColumnName').value.trim();
-            const columnType = document.getElementById('columnType').value;
-            const selectOptions = document.getElementById('selectOptions').value.trim();
+
+        function addNewColumn() {
+            const columnName = document.getElementById('newColumnName')?.value.trim();
+            const columnType = document.getElementById('columnType')?.value;
+            const selectOptions = document.getElementById('selectOptions')?.value.trim();
+
             if (!columnName) {
                 showAlert('يرجى إدخال اسم العمود', 'error');
                 return;
             }
+
             if (columnType === 'select' && !selectOptions) {
                 showAlert('يرجى إدخال الخيارات', 'error');
                 return;
             }
+
             const newColumn = {
                 name: columnName,
                 type: columnType,
                 options: columnType === 'select' ? selectOptions.split(',').map(o => o.trim()) : []
             };
+
             extraColumns.push(newColumn);
+            
             assetsData.forEach(asset => {
                 asset[columnName] = '';
             });
+
             refreshAvailableColumns();
             initVisibleColumns();
-            window.closeColumnMapper();
+            
+            saveColumnPreferences();
+            
+            closeColumnMapper();
             updateUI();
-            window.saveToLocalStorage();
+            saveToLocalStorage();
             showAlert(`تم إضافة العمود "${columnName}" بنجاح`, 'success');
-        };
-        window.showColumnSettings = function() {
-            renderColumnSettings();
-            document.getElementById('columnSettingsModal').classList.add('active');
-        };
-        window.closeColumnSettings = function() {
-            document.getElementById('columnSettingsModal').classList.remove('active');
-        };
-        window.renderColumnSettings = renderColumnSettings;
-        window.toggleColumnVisibility = toggleColumnVisibility;
-        window.moveColumn = moveColumn;
-        window.saveColumnSettings = function() {
-            window.saveToLocalStorage();
-            showAlert('تم حفظ إعدادات الأعمدة', 'success');
-            window.closeColumnSettings();
-        };
-        window.showOnlineSheetModal = function() {
-            displayConnectedSheets();
-            document.getElementById('onlineSheetModal').classList.add('active');
-        };
-        window.closeOnlineSheetModal = function() {
-            document.getElementById('onlineSheetModal').classList.remove('active');
-            document.getElementById('googleSheetUrl').value = '';
-            document.getElementById('sheetName').value = '';
-        };
-        window.displayConnectedSheets = displayConnectedSheets;
-        window.connectOnlineSheet = connectOnlineSheet;
-        window.disconnectSheet = disconnectSheet;
-        window.syncOnlineSheet = syncOnlineSheet;
-        window.showAddModal = showAddModal;
-        window.saveAsset = saveAsset;
-        window.editAsset = editAsset;
-        window.deleteAsset = deleteAsset;
-        window.toggleLocationInput = toggleLocationInput;
-        window.toggleTypeInput = toggleTypeInput;
-        window.saveToLocalStorage = saveToLocalStorage;
-        window.loadFromLocalStorage = loadFromLocalStorage;
-        window.exportToExcel = exportToExcel;
-        window.clearAllData = clearAllData;
-        window.clearAllFilters = clearAllFilters;
-        window.printBarcode = printBarcode;
-        window.showChartDetails = showChartDetails;
-        window.updateCharts = updateCharts;
-        window.applyFilter = applyFilter;
-        window.populateFilters = populateFilters;
-        window.updateUI = updateUI;
-        window.updateKPIs = updateKPIs;
-        window.updateCategories = updateCategories;
-        window.updateActiveFilters = updateActiveFilters;
-        window.removeFilter = removeFilter;
-        window.updateTable = updateTable;
-        window.getStatusClass = getStatusClass;
-        window.updatePagination = updatePagination;
-        window.goToPage = goToPage;
-        window.getColumnLabel = getColumnLabel;
-        window.switchLanguage = switchLanguage;
-        window.saveAppState = saveAppState;
-        window.loadAppState = loadAppState;
-        window.initializeData = initializeData;
-        window.handleFileUpload = handleFileUpload;
-        window.showGitHubSyncModal = showGitHubSyncModal;
-        window.closeGitHubSyncModal = closeGitHubSyncModal;
-        window.saveGitHubSettings = saveGitHubSettings;
-        window.setupGitHubAutoSync = setupGitHubAutoSync;
-        window.githubSyncPush = githubSyncPush;
-        window.githubSyncPull = githubSyncPull;
-        window.showAlert = showAlert;
-        window.updateLastUpdate = updateLastUpdate;
-        window.getDeviceIcon = getDeviceIcon;
-        window.filterByDevice = filterByDevice;
-        window.getColumnLabel = getColumnLabel;
-        window.getStatusClass = getStatusClass;
-        window.getDeviceIcon = getDeviceIcon;
-        window.updateCharts = updateCharts;
-        window.showChartDetails = showChartDetails;
-        window.showAddModal = showAddModal;
-        window.saveAsset = saveAsset;
-        window.editAsset = editAsset;
-        window.deleteAsset = deleteAsset;
-        window.toggleLocationInput = toggleLocationInput;
-        window.toggleTypeInput = toggleTypeInput;
-        window.saveToLocalStorage = saveToLocalStorage;
-        window.loadFromLocalStorage = loadFromLocalStorage;
-        window.exportToExcel = exportToExcel;
-        window.clearAllData = clearAllData;
-        window.clearAllFilters = clearAllFilters;
-        window.printBarcode = printBarcode;
-        window.showChartDetails = showChartDetails;
-        window.updateCharts = updateCharts;
-        window.applyFilter = applyFilter;
-        window.populateFilters = populateFilters;
-        window.updateUI = updateUI;
-        window.updateKPIs = updateKPIs;
-        window.updateCategories = updateCategories;
-        window.updateActiveFilters = updateActiveFilters;
-        window.removeFilter = removeFilter;
-        window.updateTable = updateTable;
-        window.getStatusClass = getStatusClass;
-        window.updatePagination = updatePagination;
-        window.goToPage = goToPage;
-        window.getColumnLabel = getColumnLabel;
-        window.switchLanguage = switchLanguage;
-        window.saveAppState = saveAppState;
-        window.loadAppState = loadAppState;
-        window.initializeData = initializeData;
-        window.handleFileUpload = handleFileUpload;
-        window.showGitHubSyncModal = showGitHubSyncModal;
-        window.closeGitHubSyncModal = closeGitHubSyncModal;
-        window.saveGitHubSettings = saveGitHubSettings;
-        window.setupGitHubAutoSync = setupGitHubAutoSync;
-        window.githubSyncPush = githubSyncPush;
-        window.githubSyncPull = githubSyncPull;
-        window.showAlert = showAlert;
-        window.updateLastUpdate = updateLastUpdate;
-    // ...existing code...
-
-        // ==================== تحديث الحفظ والتحميل ====================
-        function saveToLocalStorage() {
-            localStorage.setItem('assetsData', JSON.stringify(assetsData));
-            updateLastUpdate();
-            showAlert(translations[currentLang].saved, 'success');
         }
 
-        function loadFromLocalStorage() {
-            const saved = localStorage.getItem('assetsData');
-            if (saved) {
-                try {
-                    const data = JSON.parse(saved);
-                    assetsData = data.assetsData || [];
-                    extraColumns = data.extraColumns || [];
-                    availableColumns = data.availableColumns || [];
-                    visibleColumns = data.visibleColumns || [];
+        // ==================== إدارة إعدادات الأعمدة ====================
+        function showColumnSettings() {
+            renderColumnSettings();
+            const modal = document.getElementById('columnSettingsModal');
+            if (modal) modal.classList.add('active');
+        }
 
-                    onlineSheets = (data.onlineSheets || []).map(s => ({
-                        ...s,
-                        syncInterval: s.autoSync ? setInterval(() => {
-                            syncOnlineSheet(onlineSheets.indexOf(s));
-                        }, 300000) : null
-                    }));
-                    
-                    filteredData = [...assetsData];
+        function closeColumnSettings() {
+            const modal = document.getElementById('columnSettingsModal');
+            if (modal) modal.classList.remove('active');
+        }
+
+        function renderColumnSettings() {
+            const container = document.getElementById('columnSettingsList');
+            if (!container) return;
+
+            const allCols = Array.from(new Set([...availableColumns, ...visibleColumns, '__actions']));
+
+            container.innerHTML = allCols.map((col, idx) => {
+                const isActions = col === '__actions';
+                const label = getColumnLabel(col);
+                const checked = isActions || visibleColumns.includes(col);
+
+                return `
+                    <div class="column-item" data-col="${col}" style="display: flex; align-items: center; justify-content: space-between; padding: 10px; border-bottom: 1px solid #e5e7eb;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <input type="checkbox" ${checked ? 'checked' : ''} ${isActions ? 'disabled' : ''} onchange="toggleColumnVisibility('${col}', this.checked)">
+                            <span>${label}</span>
+                        </div>
+                        <div>
+                            <button onclick="moveColumn('${col}', -1)" style="margin-right: 6px;">⬆</button>
+                            <button onclick="moveColumn('${col}', 1)">⬇</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleColumnVisibility(column, visible) {
+            if (!visible) {
+                visibleColumns = visibleColumns.filter(c => c !== column);
+            } else if (!visibleColumns.includes(column)) {
+                visibleColumns.splice(visibleColumns.length - 1, 0, column);
+            }
+            
+            saveColumnPreferences();
+            updateUI();
+        }
+
+        function moveColumn(column, direction) {
+            const idx = visibleColumns.indexOf(column);
+            if (idx === -1) return;
+            const newIndex = idx + direction;
+            if (newIndex < 0 || newIndex >= visibleColumns.length - 1) return;
+            const temp = visibleColumns[newIndex];
+            visibleColumns[newIndex] = visibleColumns[idx];
+            visibleColumns[idx] = temp;
+            
+            saveColumnPreferences();
+            renderColumnSettings();
+            updateUI();
+        }
+
+        function saveColumnSettings() {
+            saveColumnPreferences();
+            saveToLocalStorage();
+            showAlert('تم حفظ إعدادات الأعمدة', 'success');
+            closeColumnSettings();
+        }
+
+        // ==================== إدارة الملفات الأونلاين ====================
+        function showOnlineSheetModal() {
+            displayConnectedSheets();
+            const modal = document.getElementById('onlineSheetModal');
+            if (modal) modal.classList.add('active');
+        }
+
+        function closeOnlineSheetModal() {
+            const modal = document.getElementById('onlineSheetModal');
+            if (modal) modal.classList.remove('active');
+            
+            const googleSheetUrl = document.getElementById('googleSheetUrl');
+            const sheetName = document.getElementById('sheetName');
+            
+            if (googleSheetUrl) googleSheetUrl.value = '';
+            if (sheetName) sheetName.value = '';
+        }
+
+        function displayConnectedSheets() {
+            const container = document.getElementById('connectedSheets');
+            if (!container) return;
+            
+            if (onlineSheets.length === 0) {
+                container.innerHTML = '<p style="color: #999;">لا توجد ملفات متصلة</p>';
+                return;
+            }
+
+            container.innerHTML = onlineSheets.map((sheet, idx) => `
+                <div style="padding: 10px; background: #f8faff; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong>${sheet.name}</strong><br>
+                        <small style="color: #666;">آخر مزامنة: ${sheet.lastSync ? new Date(sheet.lastSync).toLocaleString('ar-EG') : 'لم يتم'}</small>
+                    </div>
+                    <button onclick="disconnectSheet(${idx})" style="padding: 5px 10px; background: #ef4444; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                        قطع الاتصال
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function connectOnlineSheet() {
+            const url = document.getElementById('googleSheetUrl')?.value.trim();
+            const name = document.getElementById('sheetName')?.value.trim();
+            const autoSync = document.getElementById('autoSync')?.checked;
+
+            if (!url || !name) {
+                showAlert('يرجى ملء جميع الحقول', 'error');
+                return;
+            }
+
+            sourceFile.type = 'online';
+            sourceFile.name = name;
+            sourceFile.url = url;
+            sourceFile.lastSync = null;
+
+            importFromOnlineSheet(url).then(() => {
+                onlineSheets.push({ name, url, lastSync: new Date() });
+                saveSourceFileInfo();
+                updateFileStatus();
+                closeOnlineSheetModal();
+                displayConnectedSheets();
+                showAlert(`تم ربط الملف "${name}" بنجاح`, 'success');
+                
+                if (autoSync) {
+                    setInterval(() => {
+                        importFromOnlineSheet(url).catch(e => console.error('فشل المزامنة التلقائية:', e));
+                    }, 300000);
+                }
+            }).catch(error => {
+                showAlert('فشل الاتصال بالملف: ' + error.message, 'error');
+            });
+        }
+
+        function disconnectSheet(index) {
+            if (onlineSheets[index] && onlineSheets[index].syncInterval) {
+                clearInterval(onlineSheets[index].syncInterval);
+            }
+            onlineSheets.splice(index, 1);
+            displayConnectedSheets();
+            saveToLocalStorage();
+            showAlert('تم قطع الاتصال بنجاح', 'success');
+        }
+
+        async function syncOnlineSheet(index) {
+            const sheet = onlineSheets[index];
+            showAlert(`جاري مزامنة ${sheet.name}...`, 'info');
+
+            let csvUrl = sheet.url;
+            if (csvUrl.includes('/edit')) {
+                csvUrl = csvUrl.split('/edit')[0] + '/export?format=csv';
+            } else if (!csvUrl.includes('format=csv')) {
+                csvUrl += (csvUrl.includes('?') ? '&' : '?') + 'format=csv';
+            }
+
+            try {
+                const response = await fetch(csvUrl);
+                if (!response.ok) throw new Error('فشل تحميل الملف');
+                const text = await response.text();
+
+                const rows = text.trim().split(/\r?\n/).map(r => r.split(','));
+                const headers = rows.shift();
+                const newData = rows.map((row, idx) => {
+                    const obj = { id: assetsData.length + idx + 1 };
+                    headers.forEach((header, hIdx) => {
+                        let value = row[hIdx] ? row[hIdx].trim() : '';
+                        if (value.startsWith('"') && value.endsWith('"')) {
+                            value = value.substring(1, value.length - 1);
+                        }
+                        obj[header.trim()] = value;
+                    });
+                    return obj;
+                });
+
+                if (newData.length) {
+                    assetsData = [...assetsData, ...newData];
                     refreshAvailableColumns();
                     initVisibleColumns();
+                    filteredData = [...assetsData];
                     populateFilters();
                     updateUI();
-                } catch (e) {
-                    console.error('خطأ في تحميل البيانات المحفوظة');
-                    // رجوع للتحميل العادي
-                    const oldData = localStorage.getItem('assetsDataOld');
-                    if (oldData) assetsData = JSON.parse(oldData);
+
+                    sheet.lastSync = new Date();
+                    saveToLocalStorage();
+                    showAlert(`تمت المزامنة (${newData.length} سجل)`,'success');
+                } else {
+                    showAlert('لم يتم العثور على بيانات في الملف المُزامن', 'error');
                 }
+            } catch (err) {
+                console.error(err);
+                showAlert('فشل في المزامنة، تحقق من الرابط', 'error');
             }
+
+            displayConnectedSheets();
         }
 
         // ==================== تبديل اللغة ====================
@@ -2876,161 +3594,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // ==================== بدء التطبيق ====================
         initializeData();
-        // loadFromLocalStorage(); // تم استبداله بـ loadAppState في initializeData
         updateLastUpdate();
         
-        // حفظ البيانات عند إغلاق الصفحة
         window.addEventListener('beforeunload', function() {
             saveToLocalStorage();
         });
-
-    <!-- GitHub Sync Modal -->
-    <div id="githubSyncModal" class="modal">
-        <div class="modal-content" style="max-width:400px">
-            <h3 style="margin-bottom:10px">إعداد مزامنة GitHub</h3>
-            <label>GitHub Repo (مثال: user/repo):</label>
-            <input type="text" id="githubRepo" class="form-input" placeholder="user/repo">
-            <label>File Path (مثال: assets.json):</label>
-            <input type="text" id="githubFilePath" class="form-input" placeholder="assets.json">
-            <label>Personal Access Token:</label>
-            <input type="password" id="githubToken" class="form-input" placeholder="Token">
-            <label><input type="checkbox" id="githubAutoSync"> مزامنة تلقائية كل 5 دقائق</label>
-            <button onclick="saveGitHubSettings()" class="btn-primary" style="margin-top:10px">حفظ الإعدادات</button>
-            <button onclick="closeGitHubSyncModal()" class="btn-secondary" style="margin-top:10px">إغلاق</button>
-        </div>
-    </div>
-
-    <script>
-    // ==================== GitHub Sync Logic ====================
-    let githubSettings = {
-        repo: '',
-        filePath: '',
-        token: '',
-        autoSync: false,
-        syncInterval: null
-    };
-
-    function showGitHubSyncModal() {
-        document.getElementById('githubSyncModal').classList.add('active');
-        document.getElementById('githubRepo').value = githubSettings.repo;
-        document.getElementById('githubFilePath').value = githubSettings.filePath;
-        document.getElementById('githubToken').value = githubSettings.token;
-        document.getElementById('githubAutoSync').checked = githubSettings.autoSync;
-    }
-    function closeGitHubSyncModal() {
-        document.getElementById('githubSyncModal').classList.remove('active');
-    }
-    function saveGitHubSettings() {
-        githubSettings.repo = document.getElementById('githubRepo').value.trim();
-        githubSettings.filePath = document.getElementById('githubFilePath').value.trim();
-        githubSettings.token = document.getElementById('githubToken').value.trim();
-        githubSettings.autoSync = document.getElementById('githubAutoSync').checked;
-        closeGitHubSyncModal();
-        saveAppState();
-        setupGitHubAutoSync();
-        showAlert('تم حفظ إعدادات GitHub', 'success');
-    }
-    function setupGitHubAutoSync() {
-        if (githubSettings.syncInterval) clearInterval(githubSettings.syncInterval);
-        if (githubSettings.autoSync && githubSettings.repo && githubSettings.filePath && githubSettings.token) {
-            githubSettings.syncInterval = setInterval(githubSyncPush, 300000);
-        }
-    }
-    async function githubSyncPush() {
-        if (!githubSettings.repo || !githubSettings.filePath || !githubSettings.token) return;
-        showAlert('جاري مزامنة البيانات مع GitHub...', 'info');
-        try {
-            // Get file SHA
-            let sha = '';
-            const getRes = await fetch(`https://api.github.com/repos/${githubSettings.repo}/contents/${githubSettings.filePath}`, {
-                headers: { 'Authorization': `token ${githubSettings.token}` }
-            });
-            if (getRes.ok) {
-                const getData = await getRes.json();
-                sha = getData.sha;
-            }
-            // Push data
-            const content = btoa(unescape(encodeURIComponent(JSON.stringify(assetsData))));
-            const res = await fetch(`https://api.github.com/repos/${githubSettings.repo}/contents/${githubSettings.filePath}`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `token ${githubSettings.token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    message: 'Sync assetsData from dashboard',
-                    content,
-                    sha: sha || undefined
-                })
-            });
-            if (res.ok) {
-                showAlert('تمت مزامنة البيانات مع GitHub', 'success');
-            } else {
-                showAlert('فشل مزامنة البيانات مع GitHub', 'error');
-            }
-        } catch (e) {
-            showAlert('خطأ في مزامنة GitHub', 'error');
-        }
-    }
-    async function githubSyncPull() {
-        if (!githubSettings.repo || !githubSettings.filePath || !githubSettings.token) return;
-        showAlert('جاري تحميل البيانات من GitHub...', 'info');
-        try {
-            const res = await fetch(`https://api.github.com/repos/${githubSettings.repo}/contents/${githubSettings.filePath}`, {
-                headers: { 'Authorization': `token ${githubSettings.token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                const content = decodeURIComponent(escape(atob(data.content)));
-                assetsData = JSON.parse(content);
-                filteredData = [...assetsData];
-                refreshAvailableColumns();
-                initVisibleColumns();
-                populateFilters();
-                updateUI();
-                showAlert('تم تحميل البيانات من GitHub', 'success');
-            } else {
-                showAlert('فشل تحميل البيانات من GitHub', 'error');
-            }
-        } catch (e) {
-            showAlert('خطأ في تحميل GitHub', 'error');
-        }
-    }
-    // Add GitHub Sync button to toolbar
-    const toolbar = document.getElementById('toolbar');
-    if (toolbar) {
-        const btn = document.createElement('button');
-        btn.className = 'btn-secondary';
-        btn.innerHTML = '<span>مزامنة GitHub</span>';
-        btn.onclick = showGitHubSyncModal;
-        toolbar.appendChild(btn);
-    }
-    // Save to GitHub on save
-    const oldSaveToLocalStorage = saveToLocalStorage;
-    function saveToLocalStorage() {
-        oldSaveToLocalStorage();
-        githubSyncPush();
-    }
-    // Load from GitHub on startup if enabled
-    document.addEventListener('DOMContentLoaded', function() {
-        if (githubSettings.repo && githubSettings.filePath && githubSettings.token) {
-            githubSyncPull();
-            setupGitHubAutoSync();
-        }
-    });
-    // Save GitHub settings in localStorage
-    function saveAppState() {
-        localStorage.setItem('githubSettings', JSON.stringify(githubSettings));
-    }
-    function loadAppState() {
-        const s = localStorage.getItem('githubSettings');
-        if (s) {
-            try {
-                githubSettings = JSON.parse(s);
-            } catch {}
-        }
-    }
-    loadAppState();
     </script>
 </body>
 </html>
