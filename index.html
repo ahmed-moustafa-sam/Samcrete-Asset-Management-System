@@ -234,6 +234,26 @@
             box-shadow: 0 5px 15px rgba(55,65,81,0.3);
         }
         
+        .column-filters-btn {
+            background: linear-gradient(135deg, #06b6d4, #0891b2);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 12px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+        
+        .column-filters-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(6,182,212,0.3);
+        }
+        
         .filters-bar {
             background: white;
             border-radius: 20px;
@@ -944,6 +964,60 @@
             text-align: left;
         }
         
+        /* Column Filters Modal Styles */
+        .column-filters-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 20px 0;
+        }
+        
+        .column-filter-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: #f8faff;
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+        
+        .column-filter-item:hover {
+            background: #e8efff;
+        }
+        
+        .column-filter-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        
+        .column-filter-item label {
+            cursor: pointer;
+            flex: 1;
+            margin: 0;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .select-all-filters {
+            grid-column: 1 / -1;
+            padding: 12px;
+            background: #1e3c72;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .select-all-filters:hover {
+            background: #0f1f47;
+        }
+        
         @media (max-width: 768px) {
             .kpi-grid {
                 grid-template-columns: repeat(2, 1fr);
@@ -963,6 +1037,10 @@
             
             .data-table td {
                 max-width: 200px;
+            }
+            
+            .column-filters-content {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -998,2438 +1076,351 @@
             </button>
             <input type="file" id="fileInput" accept=".xlsx,.xls" style="display: none;" onchange="handleFileUpload(this)">
             
-            <button class="add-btn" onclick="showColumnMapper()">
-                <i class="fas fa-columns"></i>
-                <span id="addColumnBtnText">إضافة عمود</span>
-            </button>
-            
-            <button class="add-btn" onclick="showColumnSettings()" style="background: linear-gradient(135deg, #7c3aed, #4f46e5);">
-                <i class="fas fa-list"></i>
-                <span id="manageColumnsBtnText">إدارة الأعمدة</span>
-            </button>
-            
-            <button class="add-btn" onclick="showOnlineSheetModal()" style="background: linear-gradient(135deg, #06b6d4, #0891b2);">
-                <i class="fas fa-cloud"></i>
-                <span id="onlineSheetBtnText">ملف أونلاين</span>
-            </button>
-            
             <button class="add-btn" onclick="showAddModal()">
-                <i class="fas fa-plus-circle"></i>
-                <span id="addBtnText">إضافة جهاز جديد</span>
-            </button>
-            
-            <button class="sync-btn" onclick="syncWithSourceFile()">
-                <i class="fas fa-sync-alt"></i>
-                <span id="syncBtnText">مزامنة مع الملف</span>
+                <i class="fas fa-plus"></i>
+                <span id="addBtnText">إضافة أصل جديد</span>
             </button>
             
             <button class="export-btn" onclick="exportToExcel()">
-                <i class="fas fa-file-excel"></i>
+                <i class="fas fa-file-export"></i>
                 <span id="exportBtnText">تصدير Excel</span>
             </button>
             
-            <button class="print-btn" onclick="printDashboard()" style="background: linear-gradient(135deg, #374151, #1e293b); color: white; border: none; padding: 12px 25px; border-radius: 12px; font-size: 1em; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.3s;">
+            <button class="print-btn" onclick="printTable()">
                 <i class="fas fa-print"></i>
-                <span id="printBtnText">Print</span>
+                <span id="printBtnText">طباعة</span>
             </button>
-            
-            <button class="clear-filters" onclick="clearAllData()" style="background: #ef4444; margin-right: auto;">
-                <i class="fas fa-trash"></i>
-                <span id="clearDataBtnText">تنظيف البيانات</span>
+
+            <button class="column-filters-btn" onclick="showColumnFiltersModal()">
+                <i class="fas fa-filter"></i>
+                <span id="columnFiltersBtnText">إدارة الأعمدة</span>
             </button>
         </div>
 
         <div class="filters-bar">
             <div class="filter-group">
-                <div class="filter-label">
-                    <i class="fas fa-filter"></i>
-                    <span id="filterLocationLabel">الموقع</span>
-                </div>
-                <select class="filter-select" id="locationFilter" onchange="applyFilter()">
-                    <option value="all">All</option>
-                </select>
-            </div>
-            
-            <div class="filter-group">
-                <div class="filter-label">
-                    <i class="fas fa-tag"></i>
-                    <span id="filterDeviceLabel">نوع الجهاز</span>
-                </div>
-                <select class="filter-select" id="deviceFilter" onchange="applyFilter()">
-                    <option value="all">All</option>
-                </select>
-            </div>
-            
-            <div class="filter-group">
-                <div class="filter-label">
-                    <i class="fas fa-info-circle"></i>
-                    <span id="filterStatusLabel">الحالة</span>
-                </div>
-                <select class="filter-select" id="statusFilter" onchange="applyFilter()">
-                    <option value="all">All</option>
-                </select>
-            </div>
-            
-            <div class="filter-group">
-                <div class="filter-label">
-                    <i class="fas fa-check-circle"></i>
-                    <span id="filterCheckLabel">حالة الفحص</span>
-                </div>
-                <select class="filter-select" id="checkFilter" onchange="applyFilter()">
-                    <option value="all">All</option>
-                </select>
-            </div>
-            
-            <div class="filter-group">
-                <div class="filter-label">
+                <label class="filter-label">
                     <i class="fas fa-search"></i>
-                    <span id="searchLabel">بحث</span>
-                </div>
-                <input type="text" class="search-input" id="searchInput" placeholder="رقم تسلسلي، موديل، موظف..." onkeyup="applyFilter()">
+                    <span id="searchLabelText">بحث</span>
+                </label>
+                <input type="text" id="searchInput" class="search-input" placeholder="بحث عام..." onkeyup="filterData()">
             </div>
-            
             <button class="clear-filters" onclick="clearAllFilters()">
                 <i class="fas fa-times"></i>
-                <span id="clearFiltersText">مسح الكل</span>
+                <span id="clearFiltersBtnText">مسح الفلاتر</span>
             </button>
         </div>
 
-        <div class="kpi-grid" id="kpiCards"></div>
+        <div id="dynamicFiltersContainer" class="filters-bar" style="display: none;"></div>
 
-        <div class="categories-wrapper">
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
-                <label style="font-weight:bold;">تصنيف فرعي للكروت:</label>
-                <select id="categorySubField" class="form-input" style="width:160px;">
-                    <option value="Check status">حالة الفحص</option>
-                    <option value="Status">الحالة</option>
-                </select>
-            </div>
-            <div class="categories-grid" id="categoriesGrid"></div>
-        </div>
-
-        <div class="charts-row">
-            <div class="chart-container">
-                <div class="chart-title"><i class="fas fa-chart-bar"></i> <span id="chartTitle1">توزيع الأجهزة حسب التصنيف</span></div>
-                <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
-                    <select id="barChartField" class="form-input" style="width:140px;">
-                        <option value="Location">الموقع</option>
-                        <option value="Asset Type">نوع الجهاز</option>
-                        <option value="Status">الحالة</option>
-                        <option value="Check status">حالة الفحص</option>
-                        <option value="Location Description">الإدارة/الوصف</option>
-                    </select>
-                    <span style="font-size:0.95em;">×</span>
-                    <select id="barChartSubField" class="form-input" style="width:120px;">
-                        <option value="Check status">حالة الفحص</option>
-                        <option value="Status">الحالة</option>
-                    </select>
-                </div>
-                <canvas id="mainBarChart"></canvas>
-            </div>
-            <div class="chart-container">
-                <div class="chart-title"><i class="fas fa-chart-pie"></i> <span id="chartTitle2">توزيع حسب التصنيف</span></div>
-                <select id="pieChartField" class="form-input" style="width:180px;margin-bottom:8px;">
-                    <option value="Asset Type">نوع الجهاز</option>
-                    <option value="Location">الموقع</option>
-                    <option value="Status">الحالة</option>
-                    <option value="Check status">حالة الفحص</option>
-                    <option value="Location Description">الإدارة/الوصف</option>
-                </select>
-                <canvas id="devicePieChart"></canvas>
-            </div>
-        </div>
-
-        <div class="data-table-container" id="dataTableContainer">
+        <div class="data-table-container">
             <div class="table-header">
-                <div class="table-title"><i class="fas fa-table"></i> <span id="tableTitle">بيانات الأصول التفصيلية</span></div>
-                <div class="table-controls">
-                    <div class="rows-per-page">
-                        <label for="rowsPerPageSelect" id="rowsPerPageLabel">View</label>
-                        <select id="rowsPerPageSelect" class="form-select" onchange="changeRowsPerPage(this.value)">
-                            <option value="10">10</option>
-                            <option value="20" selected>20</option>
-                            <option value="50">50</option>
-                            <option value="100">100</option>
-                            <option value="0" id="rowsPerPageAllOption">All</option>
-                        </select>
-                        <span id="rowsPerPageSuffix">Record for each page</span>
-                    </div>
-                    <div class="active-filters" id="activeFilters"></div>
-                </div>
+                <h3 class="table-title" id="tableTitle">البيانات</h3>
             </div>
-            
-            <div class="table-scroll" id="tableScroll">
-                <table class="data-table" id="assetsTable">
-                    <thead id="tableHeader"></thead>
+            <div class="table-scroll">
+                <table id="dataTable" class="data-table">
+                    <thead>
+                        <tr id="tableHeader"></tr>
+                    </thead>
                     <tbody id="tableBody"></tbody>
                 </table>
             </div>
-            
-            <div id="pagination" class="pagination"></div>
+            <div class="pagination" id="pagination"></div>
         </div>
 
-        <div class="footer" id="footerText">
-            <i class="fas fa-sync-alt"></i> Last Update: <span id="lastUpdate"></span>
-            <span id="sourceInfo" style="margin-right: 15px; opacity: 0.8;"></span>
+        <div class="footer" id="footer">
+            <p>© 2024 نظام إدارة الأصول - Samcrete Egypt</p>
         </div>
     </div>
 
-    <div class="modal" id="assetModal">
+    <!-- Column Filters Modal -->
+    <div id="columnFiltersModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 id="modalTitle">إضافة جهاز جديد</h2>
-                <button class="modal-close" onclick="closeModal()">&times;</button>
+                <h2 id="columnFiltersTitle">إدارة الأعمدة</h2>
+                <button class="modal-close" onclick="closeColumnFiltersModal()">✕</button>
             </div>
-            
-            <div class="form-grid" id="modalForm"></div>
-            
+            <button class="select-all-filters" onclick="toggleAllColumns()">
+                <span id="selectAllColumnsText">تحديد الكل</span>
+            </button>
+            <div class="column-filters-content" id="columnFiltersContent"></div>
             <div class="modal-footer">
-                <button class="btn-secondary" onclick="closeModal()">إلغاء</button>
-                <button class="btn-primary" onclick="saveAsset()">حفظ</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal" id="columnMapperModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>إضافة عمود جديد</h2>
-                <button class="modal-close" onclick="closeColumnMapper()">&times;</button>
-            </div>
-            
-            <div style="padding: 20px;">
-                <div class="form-group">
-                    <label class="form-label">اسم العمود الجديد</label>
-                    <input type="text" id="newColumnName" class="form-input" placeholder="مثال: ملاحظات إضافية">
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">نوع البيانات</label>
-                    <select id="columnType" class="form-select">
-                        <option value="text">نص</option>
-                        <option value="number">رقم</option>
-                        <option value="date">تاريخ</option>
-                        <option value="select">اختيار من قائمة</option>
-                    </select>
-                </div>
-                
-                <div class="form-group" id="selectOptionsGroup" style="display: none;">
-                    <label class="form-label">الخيارات (مفصولة بفواصل)</label>
-                    <input type="text" id="selectOptions" class="form-input" placeholder="خيار1, خيار2, خيار3">
-                </div>
-            </div>
-            
-            <div class="modal-footer">
-                <button class="btn-secondary" onclick="closeColumnMapper()">إلغاء</button>
-                <button class="btn-primary" onclick="addNewColumn()">إضافة</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal" id="columnSettingsModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>إدارة الأعمدة</h2>
-                <button class="modal-close" onclick="closeColumnSettings()">&times;</button>
-            </div>
-            <div style="padding: 20px; max-height: 70vh; overflow-y: auto;">
-                <div id="columnSettingsList"></div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" onclick="closeColumnSettings()">إلغاء</button>
-                <button class="btn-primary" onclick="saveColumnSettings()">حفظ</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal" id="onlineSheetModal">
-        <div class="modal-content" style="max-width: 700px;">
-            <div class="modal-header">
-                <h2>ملفات أونلاين</h2>
-                <button class="modal-close" onclick="closeOnlineSheetModal()">&times;</button>
-            </div>
-            
-            <div style="padding: 20px;">
-                <!-- Tab Navigation -->
-                <div style="display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid #e0e7ff;">
-                    <button id="tabOneDrive" onclick="switchOnlineTab('onedrive')" style="flex:1; padding: 12px 20px; border: none; background: linear-gradient(135deg, #0078d4, #106ebe); color: white; font-weight: 600; font-size: 1em; cursor: pointer; border-radius: 10px 10px 0 0; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                        <i class="fab fa-microsoft"></i> Microsoft OneDrive
-                    </button>
-                    <button id="tabGoogleSheets" onclick="switchOnlineTab('google')" style="flex:1; padding: 12px 20px; border: none; background: #f0f0f0; color: #666; font-weight: 600; font-size: 1em; cursor: pointer; border-radius: 10px 10px 0 0; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                        <i class="fab fa-google"></i> Google Sheets
-                    </button>
-                </div>
-
-                <!-- OneDrive Tab Content -->
-                <div id="oneDriveTabContent">
-                    <!-- Step 1: App Configuration -->
-                    <div id="oneDriveSetup">
-                        <div style="background: linear-gradient(135deg, #e8f4fd, #d1ecf9); padding: 15px; border-radius: 12px; margin-bottom: 15px; border-right: 4px solid #0078d4;">
-                            <h4 style="color: #0078d4; margin-bottom: 8px;"><i class="fas fa-info-circle"></i> إعداد الاتصال بـ OneDrive</h4>
-                            <p style="font-size: 0.9em; color: #333; line-height: 1.6;">للربط مع OneDrive تحتاج إلى تسجيل تطبيق في Azure:</p>
-                            <ol style="font-size: 0.85em; color: #555; padding-right: 20px; line-height: 1.8;">
-                                <li>اذهب إلى <a href="https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank" style="color: #0078d4;">Azure App Registrations</a></li>
-                                <li>اضغط "New registration" → أدخل اسم التطبيق</li>
-                                <li>اختر "Accounts in any organizational directory and personal Microsoft accounts"</li>
-                                <li>Redirect URI: اختر "Single-page application (SPA)" وأدخل عنوان موقعك</li>
-                                <li>انسخ الـ Application (client) ID</li>
-                            </ol>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label"><i class="fas fa-key" style="color: #0078d4;"></i> Application (Client) ID</label>
-                            <input type="text" id="oneDriveClientId" class="form-input" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" style="direction: ltr; text-align: left;">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label"><i class="fas fa-globe" style="color: #0078d4;"></i> Redirect URI</label>
-                            <input type="text" id="oneDriveRedirectUri" class="form-input" placeholder="https://your-site.com/index.html" style="direction: ltr; text-align: left;">
-                            <small style="color: #888;">يجب أن يتطابق مع الـ Redirect URI المسجل في Azure</small>
-                        </div>
-
-                        <button onclick="saveOneDriveConfig()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #0078d4, #106ebe); color: white; border: none; border-radius: 10px; font-size: 1em; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px;">
-                            <i class="fas fa-save"></i> حفظ الإعدادات
-                        </button>
-                    </div>
-
-                    <!-- Step 2: Sign In -->
-                    <div id="oneDriveAuth" style="margin-top: 15px;">
-                        <div id="oneDriveSignInSection">
-                            <button id="oneDriveSignInBtn" onclick="signInToOneDrive()" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #0078d4, #106ebe); color: white; border: none; border-radius: 12px; font-size: 1.05em; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.3s;">
-                                <i class="fab fa-microsoft"></i> تسجيل الدخول بحساب Microsoft
-                            </button>
-                        </div>
-                        <div id="oneDriveUserInfo" style="display: none; background: #f0f9ff; padding: 15px; border-radius: 12px; margin-top: 10px;">
-                            <div style="display: flex; align-items: center; justify-content: space-between;">
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <i class="fas fa-user-circle" style="font-size: 2em; color: #0078d4;"></i>
-                                    <div>
-                                        <strong id="oneDriveUserName">المستخدم</strong><br>
-                                        <small id="oneDriveUserEmail" style="color: #666;">email@example.com</small>
-                                    </div>
-                                </div>
-                                <button onclick="signOutFromOneDrive()" style="padding: 8px 16px; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9em;">
-                                    <i class="fas fa-sign-out-alt"></i> خروج
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Step 3: File Browser -->
-                    <div id="oneDriveFileBrowser" style="display: none; margin-top: 15px;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                            <h4 style="color: #1e3c72;"><i class="fas fa-folder-open"></i> ملفات OneDrive</h4>
-                            <div style="display: flex; gap: 8px;">
-                                <button id="oneDriveBackBtn" onclick="navigateOneDriveBack()" style="padding: 6px 12px; background: #e0e7ff; border: none; border-radius: 8px; cursor: pointer; display: none;">
-                                    <i class="fas fa-arrow-right"></i> رجوع
-                                </button>
-                                <button onclick="refreshOneDriveFiles()" style="padding: 6px 12px; background: #e0e7ff; border: none; border-radius: 8px; cursor: pointer;">
-                                    <i class="fas fa-sync-alt"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div id="oneDrivePath" style="font-size: 0.85em; color: #888; margin-bottom: 8px;">/ الجذر</div>
-                        <div id="oneDriveFileList" style="max-height: 300px; overflow-y: auto; border: 1px solid #e0e7ff; border-radius: 10px;"></div>
-                    </div>
-
-                    <!-- Step 4: Connected File Info -->
-                    <div id="oneDriveConnectedFile" style="display: none; margin-top: 15px;">
-                        <div style="background: linear-gradient(135deg, #ecfdf5, #d1fae5); padding: 15px; border-radius: 12px; border-right: 4px solid #10b981;">
-                            <h4 style="color: #059669; margin-bottom: 10px;"><i class="fas fa-link"></i> ملف متصل</h4>
-                            <div style="display: flex; align-items: center; justify-content: space-between;">
-                                <div>
-                                    <strong id="connectedOneDriveFileName">filename.xlsx</strong><br>
-                                    <small id="connectedOneDriveLastSync" style="color: #666;">آخر مزامنة: --</small>
-                                </div>
-                                <div style="display: flex; gap: 8px;">
-                                    <button onclick="syncFromOneDrive().catch(e => showAlert('فشل سحب البيانات: ' + e.message, 'error'))" style="padding: 8px 16px; background: #0078d4; color: white; border: none; border-radius: 8px; cursor: pointer;">
-                                        <i class="fas fa-download"></i> سحب البيانات
-                                    </button>
-                                    <button onclick="syncToOneDrive().catch(e => showAlert('فشل رفع التغييرات: ' + e.message, 'error'))" style="padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 8px; cursor: pointer;">
-                                        <i class="fas fa-upload"></i> رفع التغييرات
-                                    </button>
-                                    <button onclick="disconnectOneDrive()" style="padding: 8px 16px; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer;">
-                                        <i class="fas fa-unlink"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group" style="margin-top: 10px;">
-                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                                <input type="checkbox" id="oneDriveAutoSync" checked onchange="toggleOneDriveAutoSync()">
-                                <span>المزامنة التلقائية كل 5 دقائق</span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Google Sheets Tab Content (existing) -->
-                <div id="googleSheetsTabContent" style="display: none;">
-                    <div class="form-group">
-                        <label class="form-label">رابط ملف Google Sheets</label>
-                        <input type="text" id="googleSheetUrl" class="form-input" placeholder="https://docs.google.com/spreadsheets/d/...">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">اسم الملف</label>
-                        <input type="text" id="sheetName" class="form-input" placeholder="مثال: بيانات الفروع">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                            <input type="checkbox" id="autoSync" checked>
-                            <span>المزامنة التلقائية كل 5 دقائق</span>
-                        </label>
-                    </div>
-                    
-                    <div id="onlineSheetsList" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e7ff;">
-                        <h4>الملفات المتصلة</h4>
-                        <div id="connectedSheets"></div>
-                    </div>
-                    
-                    <div style="margin-top: 15px; text-align: left;">
-                        <button class="btn-primary" onclick="connectOnlineSheet()" style="padding: 10px 25px;">اتصل</button>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="modal-footer">
-                <button class="btn-secondary" onclick="closeOnlineSheetModal()">إغلاق</button>
+                <button class="btn-secondary" onclick="closeColumnFiltersModal()">
+                    <span id="closeColumnFiltersText">إغلاق</span>
+                </button>
             </div>
         </div>
     </div>
 
     <script>
-        // بيانات الأصول
-        let assetsData = [];
+        // Data storage
+        let allData = [];
         let filteredData = [];
         let currentPage = 1;
-        let rowsPerPage = 20;
-        let editingId = null;
-        let currentLang = 'ar';
-        let columns = [];
-        let extraColumns = []; // أعمدة إضافية
-        let availableColumns = [];
-        let visibleColumns = [];
-        let onlineSheets = []; // الملفات الأونلاين المتصلة
-        let editingCell = null; // تتبع الخلية التي يتم تعديلها حالياً
+        let rowsPerPage = 10;
+        let visibleColumns = {};
         
-        // ==================== متغيرات جديدة لإدارة الملف المصدر ====================
-        let sourceFile = {
-            type: null, // 'local' أو 'online'
-            name: null,
-            data: null, // بيانات الملف الأصلي (للمقارنة)
-            lastSync: null,
-            fileHandle: null, // للتعامل مع الملف المحلي (File System API)
-            url: null, // رابط الملف الأونلاين
-            sheetName: null, // اسم الشيت للملف الأونلاين
-            connectionType: 'sync' // 'readonly' أو 'sync'
-        };
-
-        // ==================== طباعة الصفحة ====================
-        function printDashboard() {
-            let kpiHtml = document.getElementById('kpiCards').innerHTML;
-            let categoriesHtml = document.getElementById('categoriesGrid').innerHTML;
-            let barChart = document.getElementById('mainBarChart');
-            let pieChart = document.getElementById('devicePieChart');
-            let lastUpdate = document.getElementById('lastUpdate').textContent;
-
-            let tableNode = document.getElementById('assetsTable');
-            let tableHtml = '';
-            if (tableNode) {
-                let clone = tableNode.cloneNode(true);
-                let actionIndexes = [];
-                let ths = clone.querySelectorAll('thead th');
-                ths.forEach((th, idx) => {
-                    let txt = th.textContent.trim();
-                    let className = th.className || '';
-                    if (txt === 'إجراءات' || txt === 'Actions' || txt === '__actions' || className.includes('action') || className.includes('btn')) {
-                        actionIndexes.push(idx);
-                        th.remove();
-                    }
-                });
-                if (actionIndexes.length) {
-                    let trs = clone.querySelectorAll('tbody tr');
-                    trs.forEach(tr => {
-                        let tds = tr.querySelectorAll('td');
-                        actionIndexes.forEach(i => {
-                            if (tds.length > i) {
-                                tds[i].remove();
-                            }
-                        });
-                    });
-                }
-                tableHtml = clone.outerHTML;
-            } else {
-                tableHtml = '<div style="text-align:center;color:#888;padding:30px;">لا توجد بيانات لعرضها</div>';
-            }
-
-            let barChartImg = barChart ? barChart.toDataURL() : '';
-            let pieChartImg = pieChart ? pieChart.toDataURL() : '';
-
-            let printContent = `
-                <html lang="ar" dir="rtl">
-                <head>
-                    <meta charset="UTF-8">
-                    <title>تقرير إدارة الأصول</title>
-                    <style>
-                        @page { size: A4 portrait; margin: 10mm; }
-                        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #fff; color: #222; margin: 0; padding: 0; }
-                        .print-header { text-align: center; padding: 20px 0 8px 0; border-bottom: 2px solid #eee; }
-                        .print-header h1 { font-size: 1.5em; margin-bottom: 6px; color: #1e3c72; }
-                        .print-header p { color: #666; font-size: 1em; }
-                        .kpi-print { display: flex; gap: 10px; justify-content: center; margin: 18px 0; flex-wrap: wrap; }
-                        .kpi-card { box-shadow: none; border: 1px solid #e0e7ff; min-width: 120px; max-width: 180px; font-size: 0.95em; }
-                        .categories-print { display: flex; gap: 8px; justify-content: center; margin: 18px 0; flex-wrap: wrap; }
-                        .category-card { box-shadow: none; border: 1px solid #e0e7ff; min-width: 80px; max-width: 120px; font-size: 0.95em; }
-                        .charts-print { display: flex; gap: 15px; justify-content: center; margin: 18px 0; flex-wrap: wrap; }
-                        .charts-print img { max-width: 100%; width: 100%; height: auto; border-radius: 8px; border: 1px solid #e0e7ff; display: block; margin-bottom: 10px; }
-                        .table-print { margin: 18px auto; max-width: 700px; }
-                        .data-table { width: 100%; border-collapse: collapse; font-size: 0.92em; page-break-inside: auto; }
-                        .data-table th, .data-table td { border: 1px solid #e0e7ff; padding: 5px; text-align: center; }
-                        .data-table th { background: #1e3c72; color: #fff; font-size: 1em; }
-                        .data-table tr { page-break-inside: avoid; }
-                        .data-table { word-break: break-word; }
-                        .footer-print { text-align: center; color: #666; margin-top: 20px; font-size: 0.95em; }
-                        @media print { .print-header { page-break-after: avoid; } .footer-print { page-break-before: avoid; } }
-                    </style>
-                </head>
-                <body>
-                    <div class="print-header">
-                        <h1>تقرير إدارة الأصول</h1>
-                        <p>Samcrete Egypt - تقرير شامل للأصول</p>
-                    </div>
-                    <div class="kpi-print">${kpiHtml}</div>
-                    <div class="categories-print">${categoriesHtml}</div>
-                    <div class="charts-print">
-                        <img src="${pieChartImg}" alt="Pie Chart">
-                        <img src="${barChartImg}" alt="Bar Chart">
-                    </div>
-                    <div class="table-print">${tableHtml}</div>
-                    <div class="footer-print">
-                        <span><b>آخر تحديث:</b> ${lastUpdate}</span>
-                    </div>
-                </body>
-                </html>
-            `;
-            let printWindow = window.open('', '_blank');
-            printWindow.document.write(printContent);
-            printWindow.document.close();
-            setTimeout(() => { printWindow.print(); }, 500);
-        }
-
-        // حالة التطبيق المحفوظة
-        let currentFilters = {
-            location: 'all',
-            device: 'all',
-            status: 'all',
-            check: 'all',
-            search: '',
-            lang: 'ar',
-            rowsPerPage: 20,
-            barChartField: 'Location',
-            barChartSubField: 'Check status',
-            pieChartField: 'Asset Type',
-            categorySubField: 'Check status'
-        };
-
-        // ترجمة النصوص
-        const translations = {
+        // Language constants
+        const labels = {
             ar: {
                 mainTitle: 'نظام إدارة الأصول الشامل',
                 subTitle: 'Samcrete Egypt - إدارة ومتابعة الأصول',
                 uploadBtnText: 'تحميل ملف Excel',
-                addColumnBtnText: 'إضافة عمود',
-                onlineSheetBtnText: 'ملف أونلاين',
-                addBtnText: 'إضافة جهاز جديد',
-                manageColumnsBtnText: 'إدارة الأعمدة',
-                saveBtnText: 'حفظ التغييرات',
-                syncBtnText: 'مزامنة مع الملف',
+                addBtnText: 'إضافة أصل جديد',
                 exportBtnText: 'تصدير Excel',
-                filterLocationLabel: 'الموقع',
-                filterDeviceLabel: 'نوع الجهاز',
-                filterStatusLabel: 'الحالة',
-                filterCheckLabel: 'حالة الفحص',
-                searchLabel: 'بحث',
-                clearFiltersText: 'مسح الكل',
-                chartTitle1: 'توزيع الأجهزة حسب الموقع',
-                chartTitle2: 'توزيع أنواع الأجهزة',
-                tableTitle: 'بيانات الأصول التفصيلية',
-                clearDataBtnText: 'تنظيف البيانات',
-                all: 'الكل',
-                rowsPerPageLabel: 'عرض',
-                rowsPerPageSuffix: 'سجل لكل صفحة',
-                searchPlaceholder: 'رقم تسلسلي، موديل، موظف... ',
-                actions: 'إجراءات',
-                edit: 'تعديل',
-                delete: 'حذف',
-                save: 'حفظ',
-                cancel: 'إلغاء',
-                add: 'إضافة',
-                barcode: 'باركود',
-                modalAdd: 'إضافة جهاز جديد',
-                modalEdit: ' تعديل بيانات الجهاز',
-                noData: 'لا توجد بيانات',
-                noResults: 'لا توجد نتائج للتصفية المحددة',
-                confirmDelete: 'هل أنت متأكد من حذف هذا الجهاز؟',
-                saved: 'تم حفظ التغييرات بنجاح',
-                error: 'حدث خطأ',
-                footer: 'آخر تحديث',
-                kpi: {
-                    total: 'إجمالي الأصول',
-                    locations: 'المواقع',
-                    devices: 'أنواع الأجهزة',
-                    employees: 'الموظفين'
-                },
-                tableHeaders: ['#', 'الموقع', 'الوصف', 'الموظف', 'نوع الجهاز', 'الموديل', 'الرقم التسلسلي', 'الحالة', 'حالة الفحص', 'الإجراءات'],
-                deviceCount: 'عدد الأجهزة',
-                device: 'جهاز',
                 printBtnText: 'طباعة',
-                devices: 'أجهزة'
-                
+                columnFiltersBtnText: 'إدارة الأعمدة',
+                searchLabelText: 'بحث',
+                clearFiltersBtnText: 'مسح الفلاتر',
+                tableTitle: 'البيانات',
+                columnFiltersTitle: 'إدارة الأعمدة',
+                selectAllColumnsText: 'تحديد الكل',
+                closeColumnFiltersText: 'إغلاق'
             },
             en: {
-                mainTitle: 'Comprehensive Asset Management System',
+                mainTitle: 'Asset Management System',
                 subTitle: 'Samcrete Egypt - Asset Management',
                 uploadBtnText: 'Upload Excel File',
-                addColumnBtnText: 'Add Column',
-                onlineSheetBtnText: 'Online File',
                 addBtnText: 'Add New Asset',
-                manageColumnsBtnText: 'Manage Columns',
-                saveBtnText: 'Save Changes',
-                syncBtnText: 'Sync with File',
-                exportBtnText: 'Export to Excel',
-                filterLocationLabel: 'Location',
-                filterDeviceLabel: 'Device Type',
-                filterStatusLabel: 'Status',
-                filterCheckLabel: 'Check Status',
-                searchLabel: 'Search',
-                clearFiltersText: 'Clear All',
-                chartTitle1: 'Devices by Location',
-                chartTitle2: 'Device Types Distribution',
-                tableTitle: 'Detailed Asset Data',
-                clearDataBtnText: 'Clear All Data',
-                all: 'All',
-                actions: 'Actions',
-                edit: 'Edit',
-                delete: 'Delete',
-                save: 'Save',
-                cancel: 'Cancel',
-                add: 'Add',
-                barcode: 'Barcode',
-                modalAdd: 'Add New Asset',
-                modalEdit: 'Edit Asset',
-                noData: 'No Data',
-                noResults: 'No results for selected filters',
-                confirmDelete: 'Are you sure you want to delete this asset?',
-                saved: 'Changes saved successfully',
-                error: 'Error occurred',
-                footer: 'Last Updated',
-                kpi: {
-                    total: 'Total Assets',
-                    locations: 'Locations',
-                    devices: 'Device Types',
-                    employees: 'Employees'
-                },
-                tableHeaders: ['#', 'Location', 'Description', 'Employee', 'Device Type', 'Model', 'Serial Number', 'Status', 'Check Status', 'Actions'],
-                deviceCount: 'Device Count',
-                device: 'device',
+                exportBtnText: 'Export Excel',
                 printBtnText: 'Print',
-                devices: 'devices'
+                columnFiltersBtnText: 'Manage Columns',
+                searchLabelText: 'Search',
+                clearFiltersBtnText: 'Clear Filters',
+                tableTitle: 'Data',
+                columnFiltersTitle: 'Manage Columns',
+                selectAllColumnsText: 'Select All',
+                closeColumnFiltersText: 'Close'
             }
         };
-
-        const columnKeyLabels = {
-            Location: { ar: 'الموقع', en: 'Location' },
-            'Location Description': { ar: 'الوصف', en: 'Description' },
-            'Full Name': { ar: 'الموظف', en: 'Employee' },
-            'Asset Type': { ar: 'نوع الجهاز', en: 'Device Type' },
-            'Asset Description': { ar: 'الموديل', en: 'Model' },
-            'S/N': { ar: 'الرقم التسلسلي', en: 'Serial Number' },
-            Status: { ar: 'الحالة', en: 'Status' },
-            'Check status': { ar: 'حالة الفحص', en: 'Check Status' },
-            'Actions': { ar: 'الإجراءات', en: 'Actions' }
-        };
-
-        function getColumnLabel(key) {
-            if (key === '__actions') return translations[currentLang].actions;
-            return (columnKeyLabels[key] && columnKeyLabels[key][currentLang]) || key;
-        }
-
-        function switchLanguage(lang) {
-            currentLang = lang;
-            document.body.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
-            updateUI();
-        }
-
-        function saveAppState() {
-            localStorage.setItem('dashboardFilters', JSON.stringify(currentFilters));
-        }
-
-        function loadAppState() {
-            const saved = localStorage.getItem('dashboardFilters');
-            if (!saved) return;
-
-            let parsed;
-            try {
-                parsed = JSON.parse(saved);
-            } catch (e) {
-                console.warn('بيانات الحالة المحفوظة تالفة، سيتم إعادة تعيينها', e);
-                localStorage.removeItem('dashboardFilters');
-                return;
-            }
-
-            if (parsed && typeof parsed === 'object' && parsed.assetsData) {
-                console.log('تم العثور على بيانات أصول محفوظة داخل dashboardFilters؛ سيتم ترحيلها إلى assetsData');
-                localStorage.setItem('assetsData', JSON.stringify(parsed.assetsData));
-
-                delete parsed.assetsData;
-                delete parsed.availableColumns;
-                delete parsed.visibleColumns;
-                delete parsed.extraColumns;
-                delete parsed.onlineSheets;
-
-                localStorage.setItem('dashboardFilters', JSON.stringify(parsed));
-            }
-
-            const expectedKeys = ['location', 'device', 'status', 'check', 'search', 'lang', 'barChartField', 'barChartSubField', 'pieChartField', 'categorySubField'];
-            const isValid = parsed && typeof parsed === 'object' && expectedKeys.every(k => k in parsed);
-            if (!isValid) {
-                console.warn('البيانات المحفوظة فارغة أو غير صالحة، سيتم إعادة تعيين الفلاتر');
-                localStorage.removeItem('dashboardFilters');
-                return;
-            }
-
-            currentFilters = parsed;
-
-            const locationFilter = document.getElementById('locationFilter');
-            if (locationFilter) locationFilter.value = currentFilters.location;
-            const deviceFilter = document.getElementById('deviceFilter');
-            if (deviceFilter) deviceFilter.value = currentFilters.device;
-            const statusFilter = document.getElementById('statusFilter');
-            if (statusFilter) statusFilter.value = currentFilters.status;
-            const checkFilter = document.getElementById('checkFilter');
-            if (checkFilter) checkFilter.value = currentFilters.check;
-            const searchInput = document.getElementById('searchInput');
-            if (searchInput) searchInput.value = currentFilters.search;
-            
-            const barChartField = document.getElementById('barChartField');
-            if (barChartField) barChartField.value = currentFilters.barChartField;
-            const barChartSubField = document.getElementById('barChartSubField');
-            if (barChartSubField) barChartSubField.value = currentFilters.barChartSubField;
-            const pieChartField = document.getElementById('pieChartField');
-            if (pieChartField) pieChartField.value = currentFilters.pieChartField;
-            const categorySubField = document.getElementById('categorySubField');
-            if (categorySubField) categorySubField.value = currentFilters.categorySubField;
-
-            const rowsPerPageSelect = document.getElementById('rowsPerPageSelect');
-            if (rowsPerPageSelect) {
-                rowsPerPage = currentFilters.rowsPerPage || rowsPerPage;
-                rowsPerPageSelect.value = rowsPerPage;
-            }
-
-            if (currentFilters.lang !== currentLang) {
-                switchLanguage(currentFilters.lang);
-            }
-        }
-
-        // ==================== تحديث حالة الملف المصدر ====================
-        function updateFileStatus() {
-            const statusEl = document.getElementById('fileStatus');
-            const iconEl = document.getElementById('fileStatusIcon');
-            const textEl = document.getElementById('fileStatusText');
-            const sourceInfoEl = document.getElementById('sourceInfo');
-            
-            if (!statusEl || !iconEl || !textEl || !sourceInfoEl) return;
-            
-            if (sourceFile.type === 'local') {
-                statusEl.className = 'file-status';
-                iconEl.className = 'fas fa-file-excel';
-                textEl.textContent = `File: ${sourceFile.name || 'ملف محلي'}`;
-                sourceInfoEl.innerHTML = `<i class="fas fa-link"></i> المصدر: ${sourceFile.name}`;
-            } else if (sourceFile.type === 'onedrive') {
-                statusEl.className = 'file-status online';
-                statusEl.style.background = 'rgba(0, 120, 212, 0.3)';
-                iconEl.className = 'fab fa-microsoft';
-                textEl.textContent = `OneDrive: ${sourceFile.name || 'ملف OneDrive'}`;
-                sourceInfoEl.innerHTML = `<i class="fab fa-microsoft"></i> المصدر: OneDrive - ${sourceFile.name}`;
-            } else if (sourceFile.type === 'online') {
-                statusEl.className = 'file-status online';
-                iconEl.className = 'fas fa-cloud';
-                textEl.textContent = `متصل: ${sourceFile.name || 'ملف أونلاين'}`;
-                sourceInfoEl.innerHTML = `<i class="fas fa-cloud"></i> المصدر: ${sourceFile.name}`;
-            } else {
-                statusEl.className = 'file-status';
-                iconEl.className = 'fas fa-cloud';
-                textEl.textContent = 'غير متصل';
-                sourceInfoEl.innerHTML = '';
-            }
-        }
-
-        // ==================== حفظ الملف المصدر في localStorage ====================
-        function saveSourceFileInfo() {
-            const infoToSave = {
-                type: sourceFile.type,
-                name: sourceFile.name,
-                lastSync: sourceFile.lastSync,
-                url: sourceFile.url,
-                sheetName: sourceFile.sheetName,
-                connectionType: sourceFile.connectionType
-            };
-            localStorage.setItem('sourceFileInfo', JSON.stringify(infoToSave));
-        }
-
-        function loadSourceFileInfo() {
-            const saved = localStorage.getItem('sourceFileInfo');
-            if (saved) {
-                try {
-                    const info = JSON.parse(saved);
-                    sourceFile.type = info.type;
-                    sourceFile.name = info.name;
-                    sourceFile.lastSync = info.lastSync;
-                    sourceFile.url = info.url;
-                    sourceFile.sheetName = info.sheetName;
-                    sourceFile.connectionType = info.connectionType;
-                } catch (e) {
-                    console.error('خطأ في تحميل معلومات الملف المصدر:', e);
-                }
-            }
-            updateFileStatus();
-        }
-
-        // ==================== مزامنة التغييرات مع الملف المصدر ====================
-        async function syncWithSourceFile() {
-            if (!sourceFile.type) {
-                showAlert('لا يوجد ملف مصدر متصل', 'error');
-                return;
-            }
-
-            showAlert('جاري المزامنة...', 'info');
-
-            try {
-                if (sourceFile.type === 'local') {
-                    await syncWithLocalFile();
-                } else if (sourceFile.type === 'onedrive') {
-                    await syncToOneDrive();
-                } else if (sourceFile.type === 'online') {
-                    showAlert('المزامنة مع الملفات الأونلاين تحتاج إلى رابط تحميل مباشر. سيتم تنزيل الملف.', 'info');
-                    exportToExcel();
-                }
-                
-                sourceFile.lastSync = new Date();
-                saveSourceFileInfo();
-                updateFileStatus();
-                showAlert('تمت المزامنة بنجاح', 'success');
-            } catch (error) {
-                console.error('خطأ في المزامنة:', error);
-                showAlert('فشل المزامنة: ' + error.message, 'error');
-            }
-        }
-
-        // ==================== المزامنة مع الملف المحلي ====================
-        async function syncWithLocalFile() {
-            if (!sourceFile.fileHandle && sourceFile.type === 'local') {
-                showAlert('الملف المحلي غير متاح للحفظ التلقائي. استخدم "تصدير Excel" بدلاً من ذلك', 'error');
-                return;
-            }
-
-            try {
-                const file = await sourceFile.fileHandle.getFile();
-                const data = await file.arrayBuffer();
-                const workbook = XLSX.read(data, { type: 'array' });
-                
-                const currentWorksheet = XLSX.utils.json_to_sheet(assetsData);
-                
-                const newWorkbook = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(newWorkbook, currentWorksheet, 'Assets');
-                
-                const wbout = XLSX.write(newWorkbook, { bookType: 'xlsx', type: 'array' });
-                const blob = new Blob([wbout], { type: 'application/octet-stream' });
-                
-                const writable = await sourceFile.fileHandle.createWritable();
-                await writable.write(blob);
-                await writable.close();
-                
-                console.log('تم حفظ التغييرات في الملف المحلي');
-            } catch (error) {
-                console.error('خطأ في المزامنة مع الملف المحلي:', error);
-                throw error;
-            }
-        }
-
-        // ==================== استيراد من ملف أونلاين مع تجاوز CORS ====================
-        async function importFromOnlineSheet(url) {
-            try {
-                showAlert('جاري تحميل الملف...', 'info');
-                
-                let downloadUrl = url;
-                
-                if (url.includes('docs.google.com/spreadsheets')) {
-                    const fileId = url.match(/[-\w]{25,}/);
-                    if (fileId) {
-                        downloadUrl = `https://docs.google.com/spreadsheets/d/${fileId[0]}/export?format=csv`;
-                    }
-                } else if (url.includes('drive.google.com')) {
-                    const fileId = url.match(/[-\w]{25,}/);
-                    if (fileId) {
-                        downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId[0]}`;
-                    }
-                }
-                
-                const response = await fetch(downloadUrl, { mode: 'cors' });
-                if (!response.ok) throw new Error('فشل تحميل الملف');
-                
-                const text = await response.text();
-                await processCSVData(text);
-                
-            } catch (error) {
-                console.error('خطأ في استيراد الملف الأونلاين:', error);
-                showAlert('فشل تحميل الملف. تأكد من أن الرابط عام وقابل للتحميل.', 'error');
-                throw error;
-            }
-        }
-
-        async function processCSVData(text) {
-            const rows = text.trim().split(/\r?\n/).map(r => r.split(','));
-            const headers = rows.shift().map(h => h.trim().replace(/^"|"$/g, ''));
-            
-            const newData = rows.map((row, idx) => {
-                const obj = { id: assetsData.length + idx + 1 };
-                headers.forEach((header, hIdx) => {
-                    let value = row[hIdx] ? row[hIdx].trim() : '';
-                    value = value.replace(/^"|"$/g, '');
-                    obj[header] = value;
+        
+        let currentLang = 'ar';
+        
+        // Initialize language
+        function initializeLanguage() {
+            document.querySelectorAll('[data-lang]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    currentLang = this.getAttribute('data-lang');
+                    updateLanguage();
+                    localStorage.setItem('selectedLanguage', currentLang);
                 });
-                return obj;
-            });
-
-            if (newData.length) {
-                assetsData = newData;
-                refreshAvailableColumns();
-                initVisibleColumns();
-                filteredData = [...assetsData];
-                populateFilters();
-                updateUI();
-                saveToLocalStorage();
-                showAlert(`تم استيراد ${newData.length} سجل`, 'success');
-            }
-        }
-
-        // ==================== حفظ وتحميل تفضيلات الأعمدة ====================
-        function saveColumnPreferences() {
-            const columnPreferences = {
-                visibleColumns: visibleColumns,
-                extraColumns: extraColumns
-            };
-            localStorage.setItem('columnPreferences', JSON.stringify(columnPreferences));
-            console.log('تم حفظ تفضيلات الأعمدة:', columnPreferences);
-        }
-
-        function loadColumnPreferences() {
-            const saved = localStorage.getItem('columnPreferences');
-            if (saved) {
-                try {
-                    const preferences = JSON.parse(saved);
-                    if (preferences.visibleColumns && Array.isArray(preferences.visibleColumns)) {
-                        visibleColumns = preferences.visibleColumns;
-                    }
-                    if (preferences.extraColumns && Array.isArray(preferences.extraColumns)) {
-                        extraColumns = preferences.extraColumns;
-                    }
-                    console.log('تم تحميل تفضيلات الأعمدة:', preferences);
-                    return true;
-                } catch (e) {
-                    console.error('خطأ في تحميل تفضيلات الأعمدة:', e);
-                }
-            }
-            return false;
-        }
-
-        function refreshAvailableColumns() {
-            if (!Array.isArray(assetsData)) {
-                console.error('assetsData is not an array:', assetsData);
-                assetsData = [];
-            }
-            const allKeys = new Set();
-            assetsData.forEach(asset => Object.keys(asset).forEach(k => allKeys.add(k)));
-            availableColumns = Array.from(allKeys);
-        }
-
-        function initVisibleColumns() {
-            const loaded = loadColumnPreferences();
-            
-            if (!loaded || visibleColumns.length === 0) {
-                visibleColumns = [
-                    'Location',
-                    'Location Description',
-                    'Full Name',
-                    'Asset Type',
-                    'Asset Description',
-                    'S/N',
-                    'Status',
-                    'Check status',
-                    '__actions'
-                ];
-            }
-
-            visibleColumns = visibleColumns.filter(c => c === '__actions' || availableColumns.includes(c));
-            
-            if (!visibleColumns.includes('__actions')) {
-                visibleColumns.push('__actions');
-            } else {
-                visibleColumns = visibleColumns.filter(c => c !== '__actions');
-                visibleColumns.push('__actions');
-            }
-        }
-
-        // ==================== تهيئة البيانات من الملف ====================
-        async function initializeData() {
-            try {
-                let savedData = localStorage.getItem('assetsData');
-
-                if (!savedData) {
-                    const dashboardFiltersRaw = localStorage.getItem('dashboardFilters');
-                    if (dashboardFiltersRaw) {
-                        try {
-                            const parsedFilters = JSON.parse(dashboardFiltersRaw);
-                            if (parsedFilters && parsedFilters.assetsData) {
-                                console.log('ترحيل بيانات الأصول المحفوظة من dashboardFilters إلى assetsData');
-                                localStorage.setItem('assetsData', JSON.stringify(parsedFilters.assetsData));
-                                delete parsedFilters.assetsData;
-                                delete parsedFilters.availableColumns;
-                                delete parsedFilters.visibleColumns;
-                                delete parsedFilters.extraColumns;
-                                delete parsedFilters.onlineSheets;
-                                localStorage.setItem('dashboardFilters', JSON.stringify(parsedFilters));
-                                savedData = localStorage.getItem('assetsData');
-                            }
-                        } catch (e) {
-                            console.warn('فشل ترحيل بيانات dashboardFilters:', e);
-                        }
-                    }
-                }
-
-                if (savedData) {
-                    try {
-                        const parsedData = JSON.parse(savedData);
-                        console.log('البيانات المحفوظة:', parsedData);
-                        
-                        let extractedAssetsData = null;
-                        if (Array.isArray(parsedData)) {
-                            extractedAssetsData = parsedData;
-                        } else if (parsedData && typeof parsedData === 'object' && parsedData.assetsData) {
-                            extractedAssetsData = parsedData.assetsData;
-                        }
-                        
-                        if (Array.isArray(extractedAssetsData) && extractedAssetsData.length > 0) {
-                            assetsData = extractedAssetsData;
-                            console.log('تم تحميل البيانات من localStorage');
-                        } else {
-                            console.error('البيانات المحفوظة فارغة أو غير صحيحة، سيتم مسحها واستخدام البيانات الافتراضية');
-                            localStorage.removeItem('assetsData');
-                            assetsData = [];
-                        }
-                    } catch (e) {
-                        console.error('خطأ في تحليل البيانات المحفوظة، سيتم مسحها واستخدام البيانات الافتراضية');
-                        localStorage.removeItem('assetsData');
-                        assetsData = [];
-                    }
-                } else {
-                    const groundData = [
-                        { Location: 'Ground Floor', 'Location Description': 'None', 'Employee Number': 1997, 'Full Name': 'مينا سعيد صموئيل عزيز', 'Asset Number': 32005, 'Asset Key': '2060/02-113', 'Asset Type': 'LAP TOP', 'Asset Description': 'LAP TOP Lenovo I5 4.2/3 G.H.Z RAM 16 GB SSD 500 GB SN : CB29562090', 'S/N': 'CB29562090', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                        { Location: 'Ground Floor', 'Location Description': 'ادارة المالية', 'Employee Number': 1075, 'Full Name': 'جورج صبحى نخلة ميخائيل', 'Asset Number': 103511, 'Asset Key': '2060/06-515', 'Asset Type': 'Printer', 'Asset Description': 'HP LaserJet 137 SN : CNB2M7RG29', 'S/N': 'CNB2M7RG29', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                        { Location: 'Ground Floor', 'Location Description': 'ادارة المالية', 'Employee Number': 1286, 'Full Name': 'مجدى ميشيل جرجس صليب', 'Asset Number': 75232, 'Asset Key': '2060/02-296', 'Asset Type': 'LAP TOP', 'Asset Description': 'LAP TOP HP I7 8565U RAM 8 GB SSD 256 GB SSD SN : 5CD910129D', 'S/N': '5CD910129D', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                        { Location: 'Ground Floor', 'Location Description': 'ادارة المالية', 'Employee Number': 369, 'Full Name': 'سامح سعد صليب يوسف', 'Asset Number': 78437, 'Asset Key': '2060/02-310', 'Asset Type': 'LAP TOP', 'Asset Description': 'LAP TOP Lenovo I5 8250 RAM 8 GB HD 1 TB DVD SN : R90SM66Z', 'S/N': 'R90SM66Z', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                        { Location: 'Ground Floor', 'Location Description': 'ادارة المالية', 'Employee Number': 86, 'Full Name': 'ايهاب مرقص ابراهيم مرقص', 'Asset Number': 85616, 'Asset Key': '2060/02-357', 'Asset Type': 'LAP TOP', 'Asset Description': 'LAP TOP Lenovo I5 8250 RAM 20 GB SSD 500 GB DVD SN : PF1M3MR0', 'S/N': 'PF1M3MR0', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                        { Location: 'Ground Floor', 'Location Description': 'ادارة المالية', 'Employee Number': 86, 'Full Name': 'ايهاب مرقص ابراهيم مرقص', 'Asset Number': 44368, 'Asset Key': '2060/06-431', 'Asset Type': 'Printer', 'Asset Description': 'HP LaserJet M103 SN : VNF3F10769', 'S/N': 'VNF3F10769', Status: 'Outdated', Comments: 'مشكلة في بكرة السحب', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                        { Location: 'Ground Floor', 'Location Description': 'قسم الحسابات', 'Employee Number': 1674, 'Full Name': 'ماركو صموئيل نادر عزيز', 'Asset Number': 84530, 'Asset Key': '2060/02-349', 'Asset Type': 'LAP TOP', 'Asset Description': 'LAP TOP Lenovo I5 8250 RAM 8 GB HD 2 TB DVD SN : PF1M3UEQ', 'S/N': 'PF1M3UEQ', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                        { Location: 'Ground Floor', 'Location Description': 'قسم الحسابات', 'Employee Number': 345, 'Full Name': 'مينا عادل عبد الملك جرجس', 'Asset Number': 103505, 'Asset Key': '2060/02-435', 'Asset Type': 'LAP TOP', 'Asset Description': 'LAP TOP Lenovo I5 8250 RAM 20 GB HD 500 GB SSD DVD SN : PF11LT9AT', 'S/N': 'PF11LT9AT', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                        { Location: 'Ground Floor', 'Location Description': 'قسم الحسابات', 'Employee Number': 4286, 'Full Name': 'فادى نبيل فهمى متى', 'Asset Number': 85618, 'Asset Key': '2060/02-358', 'Asset Type': 'LAP TOP', 'Asset Description': 'LAP TOP Lenovo I5 8250 RAM 20 GB SSD 500 GB DVD SN : PF1LCYXF', 'S/N': 'PF1LCYXF', Status: 'Outdated', Comments: 'مشكلة فى البطارية - بيسخن - كسر فى اطار الشاشة', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                        { Location: 'Ground Floor', 'Location Description': 'قسم الحسابات', 'Employee Number': 4286, 'Full Name': 'فادى نبيل فهمى متى', 'Asset Number': 30898, 'Asset Key': '2060/06-220', 'Asset Type': 'Printer', 'Asset Description': 'HP Laser Jet Pro M1530 SN : GNG891T68T', 'S/N': 'GNG891T68T', Status: 'Outdated', Comments: 'تالفه', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                        { Location: 'Ground Floor', 'Location Description': 'قسم الحسابات', 'Employee Number': 4290, 'Full Name': 'بيتر رؤوف عشم حنس', 'Asset Number': 84528, 'Asset Key': '2060/02-347', 'Asset Type': 'LAP TOP', 'Asset Description': 'LAP TOP Lenovo I5 8250 RAM 20 GB HD 500 GB DVD SN : PF1LCXGC', 'S/N': 'PF1LCXGC', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' }
-                    ];
-                    
-                    const firstFloorData = [
-                        { Location: 'First Floor', 'Location Description': 'قسم الدراسات', 'Employee Number': 2809, 'Full Name': 'Abanoub Fathy Shehata Geries', 'Asset Number': 15259, 'Asset Key': '2060/04-040', 'Asset Type': 'Screen', 'Asset Description': 'Dell LCD SN : 098182540010002', 'S/N': '98182540010002', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                        { Location: 'First Floor', 'Location Description': 'الادارة العامة للانشاءات', 'Employee Number': 836, 'Full Name': 'Peter Rafaat Labib Ghabbour', 'Asset Number': 8403, 'Asset Key': '2060/10-012', 'Asset Type': 'External Hard', 'Asset Description': 'EXTERNAL 500 GB SN : 9913019', 'S/N': '9913019', Status: '', Comments: 'غير موجود', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                        { Location: 'First Floor', 'Location Description': 'قسم الدراسات', 'Employee Number': 800, 'Full Name': 'Hossam Helmy Abdallah', 'Asset Number': 33072, 'Asset Key': '2060/06-257', 'Asset Type': 'Printer', 'Asset Description': 'HP DeskJet M1536 Pro All In One SN : CNG8G2K97L', 'S/N': 'CNG8G2K97L', Status: 'Needs maintenance', Comments: 'توفى .... ويستخدمها مهندس ماير ماهر', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': 'نقل الى م/ ماير ماهر' }
-                    ];
-                    
-                    const secondFloorData = [
-                        { Location: 'Second Floor', 'Location Description': 'قسم المشتريات', 'Employee Number': 2204, 'Full Name': 'Bishoy Samy Kamel Mossad', 'Asset Number': 53543, 'Asset Key': '2060/06-453', 'Asset Type': 'Printer', 'Asset Description': 'HP 426 SN : PHBLL9L27G', 'S/N': 'PHBLL9L27G', Status: 'Good', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' }
-                    ];
-                    
-                    const thirdFloorData = [
-                        { Location: 'Third Floor', 'Location Description': 'قسم النظم والمعلومات', 'Employee Number': 46, 'Full Name': 'Fayek Noshy Eshaq Guirguis', 'Asset Number': 186107, 'Asset Key': '2060/12-102', 'Asset Type': 'Access Point', 'Asset Description': 'Access Point WireLess TP Link OC200', 'S/N': '22143P8000262', Status: '', Comments: '', 'QR Code': 'تم', 'Check status': 'Checked', 'تعليق المخازن': '' }
-                    ];
-                    
-                    const warehouseData = [
-                        { Location: 'Warehouse', 'Location Description': '', 'Employee Number': '', 'Full Name': '', 'Asset Number': '', 'Asset Key': '2060/01-419', 'Asset Type': 'Desk Top', 'Asset Description': 'Dell 3020 I3 3.5/3 RAM 8 GB HD 500 GB DVD', 'S/N': 'CJ63L52', Status: 'Outdated', Comments: 'Outdated', 'QR Code': '', 'Check status': 'Checked', 'تعليق المخازن': '' },
-                        { Location: 'Warehouse', 'Location Description': '', 'Employee Number': '', 'Full Name': '', 'Asset Number': '', 'Asset Key': '2060/01-470', 'Asset Type': 'Desk Top', 'Asset Description': 'Dell 3020 I3 3.5/3 RAM 8 GB HD 500 GB DVD', 'S/N': 'C378CB2', Status: 'Outdated', Comments: 'need hd ssd', 'QR Code': '', 'Check status': 'Checked', 'تعليق المخازن': '' }
-                    ];
-                    
-                    assetsData = [...groundData, ...firstFloorData, ...secondFloorData, ...thirdFloorData, ...warehouseData];
-                    
-                    assetsData = assetsData.map((asset, index) => ({
-                        id: index + 1,
-                        ...asset
-                    }));
-                    
-                    localStorage.setItem('assetsData', JSON.stringify(assetsData));
-                    
-                    console.log('تم تحميل البيانات الافتراضية');
-                }
-                
-                if (assetsData.length > 0) {
-                    columns = Object.keys(assetsData[0]);
-                }
-
-                refreshAvailableColumns();
-                
-                loadColumnPreferences();
-                initVisibleColumns();
-
-                filteredData = [...assetsData];
-                populateFilters();
-                loadAppState();
-                loadSourceFileInfo();
-                applyFilter();
-                updateUI();
-                updateLastUpdate();
-                
-            } catch (error) {
-                console.error('خطأ في تهيئة البيانات:', error);
-                showAlert('حدث خطأ في تحميل البيانات', 'error');
-            }
-        }
-
-        // ==================== دوال الفلاتر ====================
-        function populateFilters() {
-            const t = translations[currentLang];
-
-            const currentLocation = currentFilters.location || 'all';
-            const currentDevice = currentFilters.device || 'all';
-            const currentStatus = currentFilters.status || 'all';
-            const currentCheck = currentFilters.check || 'all';
-
-            const locations = [...new Set(assetsData.map(a => a.Location))].filter(Boolean);
-            const locationFilter = document.getElementById('locationFilter');
-            if (locationFilter) {
-                locationFilter.innerHTML = `<option value="all">${t.all}</option>` + 
-                    locations.map(l => `<option value="${l}">${l}</option>`).join('');
-                if (locationFilter.querySelector(`option[value="${currentLocation}"]`)) {
-                    locationFilter.value = currentLocation;
-                }
-            }
-
-            const devices = [...new Set(assetsData.map(a => a['Asset Type']))].filter(Boolean);
-            const deviceFilter = document.getElementById('deviceFilter');
-            if (deviceFilter) {
-                deviceFilter.innerHTML = `<option value="all">${t.all}</option>` + 
-                    devices.map(d => `<option value="${d}">${d}</option>`).join('');
-                if (deviceFilter.querySelector(`option[value="${currentDevice}"]`)) {
-                    deviceFilter.value = currentDevice;
-                }
-            }
-
-            const statuses = [...new Set(assetsData.map(a => a.Status))].filter(Boolean);
-            const statusFilter = document.getElementById('statusFilter');
-            if (statusFilter) {
-                statusFilter.innerHTML = `<option value="all">${t.all}</option>` + 
-                    statuses.map(s => `<option value="${s}">${s}</option>`).join('');
-                if (statusFilter.querySelector(`option[value="${currentStatus}"]`)) {
-                    statusFilter.value = currentStatus;
-                }
-            }
-
-            const checks = [...new Set(assetsData.map(a => a['Check status']))].filter(Boolean);
-            const checkFilter = document.getElementById('checkFilter');
-            if (checkFilter) {
-                checkFilter.innerHTML = `<option value="all">${t.all}</option>` + 
-                    checks.map(c => `<option value="${c}">${c}</option>`).join('');
-                if (checkFilter.querySelector(`option[value="${currentCheck}"]`)) {
-                    checkFilter.value = currentCheck;
-                }
-            }
-        }
-
-        function applyFilter() {
-            const location = document.getElementById('locationFilter')?.value || 'all';
-            const device = document.getElementById('deviceFilter')?.value || 'all';
-            const status = document.getElementById('statusFilter')?.value || 'all';
-            const check = document.getElementById('checkFilter')?.value || 'all';
-            const search = document.getElementById('searchInput')?.value.toLowerCase() || '';
-            
-            currentFilters.location = location;
-            currentFilters.device = device;
-            currentFilters.status = status;
-            currentFilters.check = check;
-            currentFilters.search = document.getElementById('searchInput')?.value || '';
-            saveAppState();
-            
-            filteredData = assetsData.filter(asset => {
-                if (location !== 'all' && asset.Location !== location) return false;
-                if (device !== 'all' && asset['Asset Type'] !== device) return false;
-                if (status !== 'all' && asset.Status !== status) return false;
-                if (check !== 'all' && asset['Check status'] !== check) return false;
-                
-                if (search) {
-                    const searchable = `${asset['Full Name'] || ''} ${asset['S/N'] || ''} ${asset['Asset Description'] || ''}`.toLowerCase();
-                    if (!searchable.includes(search)) return false;
-                }
-                
-                return true;
             });
             
-            currentPage = 1;
-            updateUI();
-        }
-
-        function clearAllFilters() {
-            const locationFilter = document.getElementById('locationFilter');
-            const deviceFilter = document.getElementById('deviceFilter');
-            const statusFilter = document.getElementById('statusFilter');
-            const checkFilter = document.getElementById('checkFilter');
-            const searchInput = document.getElementById('searchInput');
-            
-            if (locationFilter) locationFilter.value = 'all';
-            if (deviceFilter) deviceFilter.value = 'all';
-            if (statusFilter) statusFilter.value = 'all';
-            if (checkFilter) checkFilter.value = 'all';
-            if (searchInput) searchInput.value = '';
-            
-            currentFilters.location = 'all';
-            currentFilters.device = 'all';
-            currentFilters.status = 'all';
-            currentFilters.check = 'all';
-            currentFilters.search = '';
-            saveAppState();
-            
-            filteredData = [...assetsData];
-            currentPage = 1;
-            updateUI();
-        }
-
-        // ==================== تحديث واجهة المستخدم ====================
-        function updateUI() {
-            const t = translations[currentLang];
-            
-            const elements = {
-                mainTitle: t.mainTitle,
-                subTitle: t.subTitle,
-                uploadBtnText: t.uploadBtnText,
-                addColumnBtnText: t.addColumnBtnText,
-                onlineSheetBtnText: t.onlineSheetBtnText,
-                addBtnText: t.addBtnText,
-                manageColumnsBtnText: t.manageColumnsBtnText,
-                saveBtnText: t.saveBtnText,
-                syncBtnText: t.syncBtnText,
-                exportBtnText: t.exportBtnText,
-                clearDataBtnText: t.clearDataBtnText,
-                filterLocationLabel: t.filterLocationLabel,
-                filterDeviceLabel: t.filterDeviceLabel,
-                filterStatusLabel: t.filterStatusLabel,
-                filterCheckLabel: t.filterCheckLabel,
-                searchLabel: t.searchLabel,
-                clearFiltersText: t.clearFiltersText,
-                chartTitle1: t.chartTitle1,
-                chartTitle2: t.chartTitle2,
-                tableTitle: t.tableTitle,
-                rowsPerPageLabel: t.rowsPerPageLabel,
-                rowsPerPageSuffix: t.rowsPerPageSuffix,
-                printBtnText: t.printBtnText
-            };
-            
-            for (const [id, text] of Object.entries(elements)) {
-                const el = document.getElementById(id);
-                if (el) el.textContent = text;
-            }
-            
-            updateKPIs();
-            updateCategories();
-            updateActiveFilters();
-            updateTable();
-            updateCharts();
-        }
-
-        function updateKPIs() {
-            const t = translations[currentLang];
-            const total = filteredData.length;
-            const locations = new Set(filteredData.map(a => a.Location)).size;
-            const devices = new Set(filteredData.map(a => a['Asset Type'])).size;
-            const employees = new Set(filteredData.map(a => a['Full Name'])).size;
-            
-            const kpiCards = document.getElementById('kpiCards');
-            if (kpiCards) {
-                kpiCards.innerHTML = `
-                    <div class="kpi-card">
-                        <div class="kpi-icon"><i class="fas fa-database"></i></div>
-                        <div class="kpi-title">${t.kpi.total}</div>
-                        <div class="kpi-value">${total}</div>
-                    </div>
-                    <div class="kpi-card">
-                        <div class="kpi-icon"><i class="fas fa-map-marker-alt"></i></div>
-                        <div class="kpi-title">${t.kpi.locations}</div>
-                        <div class="kpi-value">${locations}</div>
-                    </div>
-                    <div class="kpi-card">
-                        <div class="kpi-icon"><i class="fas fa-microchip"></i></div>
-                        <div class="kpi-title">${t.kpi.devices}</div>
-                        <div class="kpi-value">${devices}</div>
-                    </div>
-                    <div class="kpi-card">
-                        <div class="kpi-icon"><i class="fas fa-users"></i></div>
-                        <div class="kpi-title">${t.kpi.employees}</div>
-                        <div class="kpi-value">${employees}</div>
-                    </div>
-                `;
-            }
-        }
-
-        function updateCategories() {
-            const subField = document.getElementById('categorySubField')?.value || 'Check status';
-            currentFilters.categorySubField = subField;
-            saveAppState();
-            const deviceMap = {};
-            filteredData.forEach(asset => {
-                const type = asset['Asset Type'] || 'غير محدد';
-                const sub = asset[subField] || 'غير محدد';
-                if (!deviceMap[type]) deviceMap[type] = {};
-                deviceMap[type][sub] = (deviceMap[type][sub] || 0) + 1;
-            });
-            const sortedDevices = Object.entries(deviceMap)
-                .map(([type, subs]) => [type, Object.values(subs).reduce((a,b)=>a+b,0), subs])
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 10);
-            const allSubs = Array.from(new Set(filteredData.map(a => a[subField] || 'غير محدد')));
-            
-            const categoriesGrid = document.getElementById('categoriesGrid');
-            if (categoriesGrid) {
-                categoriesGrid.innerHTML = sortedDevices.map(([type, total, subs]) => {
-                    const icon = getDeviceIcon(type);
-                    let subCountsHtml = '';
-                    if (subField === 'Check status') {
-                        const checked = subs['Checked'] || 0;
-                        const notChecked = subs['Not Checked'] || 0;
-                        subCountsHtml = `<div style='font-size:0.95em;margin-top:4px;'><span style='color:#10b981;font-weight:bold;'>✔️ ${checked}</span> / <span style='color:#ef4444;font-weight:bold;'>❌ ${notChecked}</span></div>`;
-                    } else {
-                        subCountsHtml = allSubs.map(sub => `<span style='font-size:0.9em;margin:0 2px;'>${sub}: <b>${subs[sub]||0}</b></span>`).join(' ');
-                    }
-                    return `
-                        <div class="category-card" onclick="filterByDevice('${type}')">
-                            <div class="category-icon"><i class="fas ${icon}"></i></div>
-                            <div class="category-name">${type}</div>
-                            <div class="category-count">${total}</div>
-                            ${subCountsHtml}
-                        </div>
-                    `;
-                }).join('');
-            }
-        }
-
-        function getDeviceIcon(type) {
-            const icons = {
-                'LAP TOP': 'fa-laptop',
-                'Printer': 'fa-print',
-                'Screen': 'fa-tv',
-                'Desk Top': 'fa-desktop',
-                'Access Point': 'fa-wifi',
-                'Switch': 'fa-network-wired',
-                'Router': 'fa-network-wired',
-                'External Hard': 'fa-hdd',
-                'Hard Disk': 'fa-hdd',
-                'Hard Drive': 'fa-hdd',
-                'External Hard Disk': 'fa-hdd',
-                'Server': 'fa-server',
-                'Application': 'fa-code'
-            };
-            return icons[type] || 'fa-microchip';
-        }
-
-        function filterByDevice(device) {
-            const deviceFilter = document.getElementById('deviceFilter');
-            if (deviceFilter) {
-                deviceFilter.value = device;
-                applyFilter();
-            }
-        }
-
-        function updateActiveFilters() {
-            const filters = [];
-            
-            const location = document.getElementById('locationFilter')?.value;
-            if (location && location !== 'all') {
-                filters.push(`<span class="filter-badge"><i class="fas fa-map-marker-alt"></i> ${location} <i class="fas fa-times" onclick="removeFilter('location')"></i></span>`);
-            }
-            
-            const device = document.getElementById('deviceFilter')?.value;
-            if (device && device !== 'all') {
-                filters.push(`<span class="filter-badge"><i class="fas fa-microchip"></i> ${device} <i class="fas fa-times" onclick="removeFilter('device')"></i></span>`);
-            }
-            
-            const status = document.getElementById('statusFilter')?.value;
-            if (status && status !== 'all') {
-                filters.push(`<span class="filter-badge"><i class="fas fa-info-circle"></i> ${status} <i class="fas fa-times" onclick="removeFilter('status')"></i></span>`);
-            }
-            
-            const check = document.getElementById('checkFilter')?.value;
-            if (check && check !== 'all') {
-                filters.push(`<span class="filter-badge"><i class="fas fa-check-circle"></i> ${check} <i class="fas fa-times" onclick="removeFilter('check')"></i></span>`);
-            }
-            
-            const search = document.getElementById('searchInput')?.value;
-            if (search) {
-                filters.push(`<span class="filter-badge"><i class="fas fa-search"></i> "${search}" <i class="fas fa-times" onclick="removeFilter('search')"></i></span>`);
-            }
-            
-            const activeFilters = document.getElementById('activeFilters');
-            if (activeFilters) {
-                activeFilters.innerHTML = filters.join('');
-            }
-        }
-
-        function removeFilter(type) {
-            if (type === 'location') {
-                const locationFilter = document.getElementById('locationFilter');
-                if (locationFilter) locationFilter.value = 'all';
-            }
-            if (type === 'device') {
-                const deviceFilter = document.getElementById('deviceFilter');
-                if (deviceFilter) deviceFilter.value = 'all';
-            }
-            if (type === 'status') {
-                const statusFilter = document.getElementById('statusFilter');
-                if (statusFilter) statusFilter.value = 'all';
-            }
-            if (type === 'check') {
-                const checkFilter = document.getElementById('checkFilter');
-                if (checkFilter) checkFilter.value = 'all';
-            }
-            if (type === 'search') {
-                const searchInput = document.getElementById('searchInput');
-                if (searchInput) searchInput.value = '';
-            }
-            
-            applyFilter();
-        }
-
-        // دالة لتبديل القيم boolean
-        function toggleBooleanValue(assetId, columnName, checked) {
-            const assetIndex = assetsData.findIndex(a => a.id === assetId);
-            if (assetIndex === -1) return;
-            
-            const oldValue = assetsData[assetIndex][columnName];
-            const newValue = checked;
-            
-            assetsData[assetIndex][columnName] = newValue;
-            
-            const filteredIndex = filteredData.findIndex(a => a.id === assetId);
-            if (filteredIndex !== -1) {
-                filteredData[filteredIndex][columnName] = newValue;
-            }
-            
-            updateTable();
-            saveToLocalStorage();
-            
-            if (sourceFile.type && sourceFile.connectionType === 'sync') {
-                syncWithSourceFile().catch(e => console.error('فشل المزامنة:', e));
-            }
-            
-            showAlert(`تم تحديث ${getColumnLabel(columnName)}`, 'success');
-        }
-
-        // ==================== تحديث الجدول مع دعم التعديل المباشر ====================
-        function updateTable() {
-            const t = translations[currentLang];
-            const start = (currentPage - 1) * rowsPerPage;
-            const pageData = rowsPerPage === 0 ? filteredData : filteredData.slice(start, start + rowsPerPage);
-
-            const headers = visibleColumns.map(col => `<th>${getColumnLabel(col)}</th>`);
-            const tableHeader = document.getElementById('tableHeader');
-            if (tableHeader) {
-                tableHeader.innerHTML = headers.join('');
-            }
-
-            const tableBody = document.getElementById('tableBody');
-            if (tableBody) {
-                tableBody.innerHTML = pageData.map((asset, index) => {
-                    const rowIndex = start + index + 1;
-
-                    const rowCells = visibleColumns.map(col => {
-                        if (col === '__actions') {
-                            return `
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="btn-barcode" onclick="printBarcode(${asset.id})" title="${t.barcode}"><i class="fas fa-barcode"></i></button>
-                                        <button class="btn-delete" onclick="deleteAsset(${asset.id})" title="${t.delete}"><i class="fas fa-trash"></i></button>
-                                    </div>
-                                </td>
-                            `;
-                        }
-
-                        let value = asset[col];
-                        
-                        const isBoolean = typeof value === 'boolean' || 
-                                         value === 'true' || value === 'false' ||
-                                         value === true || value === false;
-                        
-                        if (isBoolean) {
-                            const boolValue = value === true || value === 'true';
-                            
-                            return `<td style="text-align: center;">
-                                <input type="checkbox" 
-                                       ${boolValue ? 'checked' : ''} 
-                                       onchange="toggleBooleanValue(${asset.id}, '${col}', this.checked)"
-                                       style="width: 20px; height: 20px; cursor: pointer;"
-                                       title="انقر لتغيير القيمة">
-                            </td>`;
-                        }
-                        
-                        if (col === 'Status') {
-                            const statusClass = getStatusClass(value);
-                            value = `<span class="status-badge ${statusClass}">${value || '-'}</span>`;
-                        } else if (col === 'Check status') {
-                            const cls = value === 'Checked' ? 'status-good' : 'status-not-checked';
-                            value = `<span class="status-badge ${cls}">${value || '-'}</span>`;
-                        } else {
-                            value = value || '-';
-                        }
-
-                        return `<td ondblclick="startEditing(${asset.id}, '${col}')" style="cursor: pointer;" title="انقر مرتين للتعديل">${value}</td>`;
-                    }).join('');
-
-                    return `<tr data-id="${asset.id}">${rowCells}</tr>`;
-                }).join('');
-            }
-
-            updatePagination();
-        }
-
-        function startEditing(assetId, columnName) {
-            if (columnName === '__actions') return;
-            
-            const asset = assetsData.find(a => a.id === assetId);
-            if (!asset) return;
-            
-            const value = asset[columnName];
-            const isBoolean = typeof value === 'boolean' || 
-                             value === 'true' || value === 'false' ||
-                             value === true || value === false;
-            
-            if (isBoolean) {
-                return;
-            }
-            
-            const row = document.querySelector(`tr[data-id="${assetId}"]`);
-            if (!row) return;
-            
-            const cells = row.querySelectorAll('td');
-            const colIndex = visibleColumns.indexOf(columnName);
-            if (colIndex === -1 || colIndex >= cells.length) return;
-            
-            const cell = cells[colIndex];
-            const currentValue = asset[columnName] || '';
-            
-            let inputHtml = '';
-            
-            const existingValues = [...new Set(assetsData.map(a => a[columnName]).filter(Boolean))];
-            
-            if (columnName === 'Status') {
-                inputHtml = `<select class="edit-select" onchange="saveCellEdit(${assetId}, '${columnName}', this.value)" onblur="this.parentElement.innerHTML=this.value">
-                    <option value="Good" ${currentValue === 'Good' ? 'selected' : ''}>Good</option>
-                    <option value="Needs maintenance" ${currentValue === 'Needs maintenance' ? 'selected' : ''}>Needs maintenance</option>
-                    <option value="Outdated" ${currentValue === 'Outdated' ? 'selected' : ''}>Outdated</option>
-                    <option value="" ${!currentValue ? 'selected' : ''}>غير محدد</option>
-                </select>`;
-            } else if (columnName === 'Check status') {
-                inputHtml = `<select class="edit-select" onchange="saveCellEdit(${assetId}, '${columnName}', this.value)" onblur="this.parentElement.innerHTML=this.value">
-                    <option value="Checked" ${currentValue === 'Checked' ? 'selected' : ''}>Checked</option>
-                    <option value="Not Checked" ${currentValue === 'Not Checked' ? 'selected' : ''}>Not Checked</option>
-                </select>`;
-            } else if (columnName === 'Location' || columnName === 'Asset Type') {
-                const options = [...new Set(assetsData.map(a => a[columnName]).filter(Boolean))];
-                inputHtml = `<select class="edit-select" onchange="saveCellEdit(${assetId}, '${columnName}', this.value)" onblur="this.parentElement.innerHTML=this.value">
-                    <option value="">اختر...</option>
-                    ${options.map(opt => `<option value="${opt}" ${currentValue === opt ? 'selected' : ''}>${opt}</option>`).join('')}
-                </select>`;
-            } else {
-                inputHtml = `<input type="text" class="edit-input" value="${String(currentValue).replace(/"/g, '&quot;')}" 
-                    onblur="saveCellEdit(${assetId}, '${columnName}', this.value)" 
-                    onkeypress="if(event.key==='Enter'){saveCellEdit(${assetId}, '${columnName}', this.value)}">`;
-            }
-            
-            const oldValue = cell.innerHTML;
-            cell.innerHTML = inputHtml;
-            cell.classList.add('editing');
-            
-            const input = cell.querySelector('input, select');
-            if (input) {
-                input.focus();
-                if (input.tagName === 'INPUT') {
-                    input.select();
-                }
-            }
-            
-            editingCell = { element: cell, oldValue: oldValue, assetId: assetId, columnName: columnName };
-        }
-
-        function saveCellEdit(assetId, columnName, newValue) {
-            const assetIndex = assetsData.findIndex(a => a.id === assetId);
-            if (assetIndex === -1) return;
-            
-            const oldValue = assetsData[assetIndex][columnName];
-            assetsData[assetIndex][columnName] = newValue;
-            
-            const filteredIndex = filteredData.findIndex(a => a.id === assetId);
-            if (filteredIndex !== -1) {
-                filteredData[filteredIndex][columnName] = newValue;
-            }
-            
-            updateTable();
-            saveToLocalStorage();
-            
-            if (sourceFile.type && sourceFile.connectionType === 'sync') {
-                syncWithSourceFile().catch(e => console.error('فشل المزامنة:', e));
-            }
-            
-            if (oldValue !== newValue) {
-                showAlert(`تم تحديث ${getColumnLabel(columnName)}`, 'success');
-            }
-            
-            editingCell = null;
-        }
-
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && editingCell) {
-                const cell = editingCell.element;
-                cell.innerHTML = editingCell.oldValue;
-                cell.classList.remove('editing');
-                editingCell = null;
-            }
-        });
-
-        function getStatusClass(status) {
-            if (!status) return 'status-not-checked';
-            if (status.includes('Good')) return 'status-good';
-            if (status.includes('Needs maintenance')) return 'status-maintenance';
-            if (status.includes('Outdated')) return 'status-outdated';
-            return 'status-not-checked';
-        }
-
-        function updatePagination() {
-            const paginationEl = document.getElementById('pagination');
-            if (!paginationEl) return;
-            
-            if (rowsPerPage === 0) {
-                paginationEl.innerHTML = '';
-                return;
-            }
-            const totalPages = Math.ceil(filteredData.length / rowsPerPage);
-            if (totalPages <= 1) {
-                paginationEl.innerHTML = '';
-                return;
-            }
-
-            const maxButtons = 7;
-            const showRange = (page, total, max) => {
-                const half = Math.floor(max / 2);
-                let start = Math.max(1, page - half);
-                let end = Math.min(total, page + half);
-                if (end - start + 1 < max) {
-                    if (start === 1) {
-                        end = Math.min(total, start + max - 1);
-                    } else if (end === total) {
-                        start = Math.max(1, end - max + 1);
-                    }
-                }
-                return { start, end };
-            };
-
-            const { start, end } = showRange(currentPage, totalPages, maxButtons);
-            let html = '';
-
-            const addButton = (page, label, extraClass = '') => {
-                html += `<button class="page-btn ${page === currentPage ? 'active' : ''} ${extraClass}" onclick="goToPage(${page})">${label}</button>`;
-            };
-
-            if (currentPage > 1) {
-                addButton(currentPage - 1, '◀');
-            }
-
-            if (start > 1) {
-                addButton(1, '1');
-                if (start > 2) html += `<span class="ellipsis">…</span>`;
-            }
-
-            for (let i = start; i <= end; i++) {
-                addButton(i, i);
-            }
-
-            if (end < totalPages) {
-                if (end < totalPages - 1) html += `<span class="ellipsis">…</span>`;
-                addButton(totalPages, totalPages);
-            }
-
-            if (currentPage < totalPages) {
-                addButton(currentPage + 1, '▶');
-            }
-
-            paginationEl.innerHTML = html;
-        }
-
-        function goToPage(page) {
-            const totalPages = rowsPerPage === 0 ? 1 : Math.ceil(filteredData.length / rowsPerPage);
-            if (page < 1) page = 1;
-            if (page > totalPages) page = totalPages;
-            currentPage = page;
-            updateTable();
-        }
-
-        function changeRowsPerPage(value) {
-            const parsed = parseInt(value, 10);
-            rowsPerPage = Number.isNaN(parsed) ? 20 : parsed;
-            currentFilters.rowsPerPage = rowsPerPage;
-            currentPage = 1;
-            saveAppState();
-            updateTable();
-        }
-
-        // ==================== تحديث الرسوم البيانية ====================
-        function updateCharts() {
-            if (window.barChart) window.barChart.destroy();
-            if (window.pieChart) window.pieChart.destroy();
-            
-            const barField = document.getElementById('barChartField')?.value || 'Location';
-            const pieField = document.getElementById('pieChartField')?.value || 'Asset Type';
-            const barSubField = document.getElementById('barChartSubField')?.value || 'Check status';
-            
-            currentFilters.barChartField = barField;
-            currentFilters.barChartSubField = barSubField;
-            currentFilters.pieChartField = pieField;
-            saveAppState();
-            
-            let barData = {};
-            let barSubKeys = [];
-            
-            filteredData.forEach(asset => {
-                const key = asset[barField] || 'غير محدد';
-                const sub = asset[barSubField] || 'غير محدد';
-                if (!barData[key]) barData[key] = {};
-                barData[key][sub] = (barData[key][sub] || 0) + 1;
-            });
-            barSubKeys = Array.from(new Set(filteredData.map(a => a[barSubField] || 'غير محدد')));
-            
-            const barCtx = document.getElementById('mainBarChart')?.getContext('2d');
-            if (barCtx) {
-                window.barChart = new Chart(barCtx, {
-                    type: 'bar',
-                    data: {
-                        labels: Object.keys(barData),
-                        datasets: barSubKeys.map((sub, i) => ({
-                            label: sub,
-                            data: Object.keys(barData).map(k => barData[k][sub] || 0),
-                            backgroundColor: ['#1e3c72', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6b7280'][i % 9],
-                            borderWidth: 1
-                        }))
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { position: 'top' },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        return `${context.dataset.label}: ${context.parsed.y} جهاز`;
-                                    }
-                                }
-                            }
-                        },
-                        onClick: function(evt, elements) {
-                            if (elements.length > 0) {
-                                const idx = elements[0].index;
-                                const datasetIdx = elements[0].datasetIndex;
-                                const label = this.data.labels[idx];
-                                const sub = this.data.datasets[datasetIdx].label;
-                                const details = filteredData.filter(asset => (asset[barField] || 'غير محدد') === label && (asset[barSubField] || 'غير محدد') === sub);
-                                showChartDetails(`${label} - ${sub}`, details);
-                            }
-                        },
-                        scales: {
-                            y: { beginAtZero: true, ticks: { stepSize: 1 } }
-                        }
-                    }
+            const savedLang = localStorage.getItem('selectedLanguage');
+            if (savedLang) {
+                currentLang = savedLang;
+                document.querySelectorAll('[data-lang]').forEach(btn => {
+                    btn.classList.remove('active');
                 });
+                document.querySelector(`[data-lang="${currentLang}"]`).classList.add('active');
             }
-            
-            const pieData = {};
-            filteredData.forEach(asset => {
-                const key = asset[pieField] || 'غير محدد';
-                pieData[key] = (pieData[key] || 0) + 1;
-            });
-            const colors = ['#1e3c72', '#2a5298', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6b7280'];
-            const pieCtx = document.getElementById('devicePieChart')?.getContext('2d');
-            if (pieCtx) {
-                window.pieChart = new Chart(pieCtx, {
-                    type: 'pie',
-                    data: {
-                        labels: Object.keys(pieData),
-                        datasets: [{
-                            data: Object.values(pieData),
-                            backgroundColor: colors.slice(0, Object.keys(pieData).length)
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { position: 'bottom' },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        return `${context.label}: ${context.parsed} جهاز`;
-                                    }
-                                }
-                            }
-                        },
-                        onClick: function(evt, elements) {
-                            if (elements.length > 0) {
-                                const idx = elements[0].index;
-                                const label = this.data.labels[idx];
-                                const details = filteredData.filter(asset => (asset[pieField] || 'غير محدد') === label);
-                                showChartDetails(label, details);
-                            }
-                        }
-                    }
-                });
-            }
-        }
-
-        function showChartDetails(label, details) {
-            let html = `<div style='padding:16px;max-height:400px;overflow:auto;direction:rtl;'>`;
-            html += `<h3 style='margin-bottom:10px;'>${label} - عدد: ${details.length}</h3>`;
-            html += `<table border='1' style='width:100%;border-collapse:collapse;'>`;
-            html += `<tr>`;
-            Object.keys(details[0]||{}).forEach(k=>{html+=`<th>${k}</th>`});
-            html += `</tr>`;
-            details.forEach(row=>{
-                html += `<tr>`;
-                Object.values(row).forEach(v=>{html+=`<td>${v}</td>`});
-                html += `</tr>`;
-            });
-            html += `</table></div>`;
-            const modal = document.createElement('div');
-            modal.style.position = 'fixed';
-            modal.style.top = '0';
-            modal.style.left = '0';
-            modal.style.width = '100vw';
-            modal.style.height = '100vh';
-            modal.style.background = 'rgba(0,0,0,0.4)';
-            modal.style.zIndex = '9999';
-            modal.innerHTML = `<div style='background:#fff;max-width:900px;margin:40px auto;padding:20px;border-radius:12px;position:relative;'>${html}<button onclick='this.parentNode.parentNode.remove()' style='position:absolute;top:10px;left:10px;font-size:1.5em;'>×</button></div>`;
-            document.body.appendChild(modal);
         }
         
-        document.addEventListener('DOMContentLoaded', function() {
-            const barChartField = document.getElementById('barChartField');
-            const barChartSubField = document.getElementById('barChartSubField');
-            const pieChartField = document.getElementById('pieChartField');
-            const categorySubField = document.getElementById('categorySubField');
+        function updateLanguage() {
+            const lang = labels[currentLang];
+            document.getElementById('mainTitle').textContent = lang.mainTitle;
+            document.getElementById('uploadBtnText').textContent = lang.uploadBtnText;
+            document.getElementById('addBtnText').textContent = lang.addBtnText;
+            document.getElementById('exportBtnText').textContent = lang.exportBtnText;
+            document.getElementById('printBtnText').textContent = lang.printBtnText;
+            document.getElementById('columnFiltersBtnText').textContent = lang.columnFiltersBtnText;
+            document.getElementById('searchLabelText').textContent = lang.searchLabelText;
+            document.getElementById('clearFiltersBtnText').textContent = lang.clearFiltersBtnText;
+            document.getElementById('tableTitle').textContent = lang.tableTitle;
             
-            if (barChartField) barChartField.addEventListener('change', updateCharts);
-            if (barChartSubField) barChartSubField.addEventListener('change', updateCharts);
-            if (pieChartField) pieChartField.addEventListener('change', updateCharts);
-            if (categorySubField) categorySubField.addEventListener('change', function() {
-                updateCategories();
+            document.querySelectorAll('[data-lang]').forEach(btn => {
+                btn.classList.remove('active');
             });
-        });
-
-        // ==================== دوال إدارة البيانات ====================
+            document.querySelector(`[data-lang="${currentLang}"]`).classList.add('active');
+        }
+        
+        // Handle File Upload
         function handleFileUpload(input) {
             const file = input.files[0];
             if (!file) return;
             
-            sourceFile.type = 'local';
-            sourceFile.name = file.name;
-            
-            if (window.showSaveFilePicker) {
-                try {
-                    window.showSaveFilePicker({
-                        suggestedName: file.name,
-                        types: [{
-                            description: 'Excel Files',
-                            accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] }
-                        }]
-                    }).then(handle => {
-                        sourceFile.fileHandle = handle;
-                    }).catch(() => {});
-                } catch (e) {
-                    console.log('File System Access API غير متاح');
-                }
-            }
-            
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
+                    const wb = XLSX.read(e.target.result, { type: 'array' });
+                    const ws = wb.Sheets[wb.SheetNames[0]];
+                    const data = XLSX.utils.sheet_to_json(ws);
                     
-                    let allData = [];
-                    let idCounter = assetsData.length + 1;
+                    allData = data;
+                    filteredData = data;
+                    currentPage = 1;
                     
-                    workbook.SheetNames.forEach(sheetName => {
-                        const worksheet = workbook.Sheets[sheetName];
-                        const jsonData = XLSX.utils.sheet_to_json(worksheet);
-                        
-                        if (jsonData.length > 0) {
-                            const newData = jsonData.map((row) => ({
-                                id: idCounter++,
-                                ...row
-                            }));
-                            allData = [...allData, ...newData];
-                        }
-                    });
-                    
-                    if (allData.length > 0) {
-                        assetsData = [...assetsData, ...allData];
-                        console.log('البيانات بعد التحميل:', assetsData);
-                        console.log('نوع البيانات:', typeof assetsData, 'هل مصفوفة:', Array.isArray(assetsData));
-                        saveToLocalStorage();
-                        console.log('تم حفظ البيانات في localStorage');
-                        refreshAvailableColumns();
-                        initVisibleColumns();
-                        filteredData = [...assetsData];
-                        populateFilters();
-                        updateUI();
-                        saveSourceFileInfo();
-                        updateFileStatus();
-                        showAlert(`تم تحميل ${allData.length} سجل من ${workbook.SheetNames.length} شيتات`, 'success');
-                    } else {
-                        showAlert('لم يتم العثور على بيانات في الملف', 'error');
+                    // Initialize visible columns
+                    if (data.length > 0) {
+                        Object.keys(data[0]).forEach(col => {
+                            visibleColumns[col] = true;
+                        });
                     }
+                    
+                    renderTable();
+                    showAlert('تم تحميل الملف بنجاح', 'success');
                 } catch (error) {
-                    console.error(error);
                     showAlert('خطأ في قراءة الملف', 'error');
+                    console.error(error);
                 }
             };
-            
             reader.readAsArrayBuffer(file);
-            input.value = '';
         }
         
-        function clearAllData() {
-            if (!confirm('هل أنت متأكد من حذف جميع البيانات؟ هذا الإجراء لا يمكن التراجع عنه!')) return;
+        // Render Table
+        function renderTable() {
+            const tableHeader = document.getElementById('tableHeader');
+            const tableBody = document.getElementById('tableBody');
             
-            assetsData = [];
-            filteredData = [];
+            tableHeader.innerHTML = '';
+            tableBody.innerHTML = '';
+            
+            if (allData.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding: 20px;">لا توجد بيانات</td></tr>';
+                return;
+            }
+            
+            // Get all column names
+            const allColumns = Object.keys(allData[0]);
+            
+            // Create headers for visible columns
+            allColumns.forEach(col => {
+                if (visibleColumns[col]) {
+                    const th = document.createElement('th');
+                    th.textContent = col;
+                    tableHeader.appendChild(th);
+                }
+            });
+            
+            // Add action column header
+            const actionTh = document.createElement('th');
+            actionTh.textContent = 'الإجراءات';
+            tableHeader.appendChild(actionTh);
+            
+            // Calculate pagination
+            const start = (currentPage - 1) * rowsPerPage;
+            const end = start + rowsPerPage;
+            const pageData = filteredData.slice(start, end);
+            
+            // Render rows
+            pageData.forEach((row, index) => {
+                const tr = document.createElement('tr');
+                
+                allColumns.forEach(col => {
+                    if (visibleColumns[col]) {
+                        const td = document.createElement('td');
+                        td.textContent = row[col] || '';
+                        tr.appendChild(td);
+                    }
+                });
+                
+                // Add action buttons
+                const actionTd = document.createElement('td');
+                actionTd.className = 'action-buttons';
+                actionTd.innerHTML = `
+                    <button class="btn-edit" onclick="editRow(this, ${start + index})">تعديل</button>
+                    <button class="btn-delete" onclick="deleteRow(${start + index})">حذف</button>
+                `;
+                tr.appendChild(actionTd);
+                
+                tableBody.appendChild(tr);
+            });
+            
+            renderPagination();
+        }
+        
+        // Filter Data
+        function filterData() {
+            const searchValue = document.getElementById('searchInput').value.toLowerCase();
+            
+            filteredData = allData.filter(row => {
+                return Object.values(row).some(value => 
+                    String(value).toLowerCase().includes(searchValue)
+                );
+            });
+            
             currentPage = 1;
-            extraColumns = [];
+            renderTable();
+        }
+        
+        // Clear Filters
+        function clearAllFilters() {
+            document.getElementById('searchInput').value = '';
+            filteredData = allData;
+            currentPage = 1;
+            renderTable();
+        }
+        
+        // Render Pagination
+        function renderPagination() {
+            const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+            const paginationDiv = document.getElementById('pagination');
+            paginationDiv.innerHTML = '';
             
-            onlineSheets.forEach(sheet => {
-                if (sheet.syncInterval) clearInterval(sheet.syncInterval);
+            for (let i = 1; i <= totalPages; i++) {
+                const btn = document.createElement('button');
+                btn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
+                btn.textContent = i;
+                btn.onclick = () => {
+                    currentPage = i;
+                    renderTable();
+                };
+                paginationDiv.appendChild(btn);
+            }
+        }
+        
+        // Column Filters Modal
+        function showColumnFiltersModal() {
+            const modal = document.getElementById('columnFiltersModal');
+            const content = document.getElementById('columnFiltersContent');
+            content.innerHTML = '';
+            
+            const columns = Object.keys(allData[0] || {});
+            
+            columns.forEach(col => {
+                const div = document.createElement('div');
+                div.className = 'column-filter-item';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `col-${col}`;
+                checkbox.checked = visibleColumns[col];
+                checkbox.onchange = () => {
+                    visibleColumns[col] = checkbox.checked;
+                    renderTable();
+                };
+                
+                const label = document.createElement('label');
+                label.htmlFor = `col-${col}`;
+                label.textContent = col;
+                
+                div.appendChild(checkbox);
+                div.appendChild(label);
+                content.appendChild(div);
             });
-            onlineSheets = [];
             
-            const t = translations[currentLang];
-            const locationFilter = document.getElementById('locationFilter');
-            const deviceFilter = document.getElementById('deviceFilter');
-            const statusFilter = document.getElementById('statusFilter');
-            const checkFilter = document.getElementById('checkFilter');
-            const searchInput = document.getElementById('searchInput');
-            
-            if (locationFilter) locationFilter.innerHTML = `<option value="all">${t.all}</option>`;
-            if (deviceFilter) deviceFilter.innerHTML = `<option value="all">${t.all}</option>`;
-            if (statusFilter) statusFilter.innerHTML = `<option value="all">${t.all}</option>`;
-            if (checkFilter) checkFilter.innerHTML = `<option value="all">${t.all}</option>`;
-            if (searchInput) searchInput.value = '';
-            
-            updateUI();
-            localStorage.removeItem('assetsData');
-            showAlert('تم تنظيف جميع البيانات بنجاح', 'success');
+            modal.classList.add('active');
         }
-
-        function showAddModal() {
-            const t = translations[currentLang];
-            editingId = null;
-            const modalTitle = document.getElementById('modalTitle');
-            if (modalTitle) modalTitle.textContent = t.modalAdd;
-            
-            const existingLocations = [...new Set(assetsData.map(a => a.Location))].filter(Boolean);
-            const existingTypes = [...new Set(assetsData.map(a => a['Asset Type']))].filter(Boolean);
-            
-            const formHtml = `
-                <div class="form-group">
-                    <label class="form-label">الموقع <span style="color: #ef4444;">*</span></label>
-                    <div style="display: flex; gap: 8px;">
-                        <select class="form-select" id="modalLocation" style="flex: 1;">
-                            <option value="">اختر الموقع أو أضف جديد</option>
-                            ${existingLocations.map(l => `<option value="${l}">${l}</option>`).join('')}
-                        </select>
-                        <button type="button" class="btn-secondary" onclick="toggleLocationInput()" style="padding: 8px 12px; white-space: nowrap;">إضافة جديد</button>
-                    </div>
-                    <input type="text" class="form-input" id="modalLocationNew" placeholder="أدخل موقع جديد" style="display: none; margin-top: 8px;">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">وصف الموقع</label>
-                    <input type="text" class="form-input" id="modalLocationDesc" placeholder="وصف الموقع">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">رقم الموظف</label>
-                    <input type="text" class="form-input" id="modalEmpNum" placeholder="رقم الموظف">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">اسم الموظف</label>
-                    <input type="text" class="form-input" id="modalFullName" placeholder="الاسم الكامل">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">رقم الأصل <span style="color: #ef4444;">*</span></label>
-                    <input type="text" class="form-input" id="modalAssetNum" placeholder="رقم الأصل" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">مفتاح الأصل</label>
-                    <input type="text" class="form-input" id="modalAssetKey" placeholder="مفتاح الأصل">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">نوع الجهاز <span style="color: #ef4444;">*</span></label>
-                    <div style="display: flex; gap: 8px;">
-                        <select class="form-select" id="modalAssetType" style="flex: 1;">
-                            <option value="">اختر نوع الجهاز أو أضف جديد</option>
-                            ${existingTypes.map(t => `<option value="${t}">${t}</option>`).join('')}
-                        </select>
-                        <button type="button" class="btn-secondary" onclick="toggleTypeInput()" style="padding: 8px 12px; white-space: nowrap;">إضافة جديد</button>
-                    </div>
-                    <input type="text" class="form-input" id="modalAssetTypeNew" placeholder="أدخل نوع جهاز جديد" style="display: none; margin-top: 8px;">
-                </div>
-                <div class="form-group full-width">
-                    <label class="form-label">وصف الجهاز <span style="color: #ef4444;">*</span></label>
-                    <input type="text" class="form-input" id="modalAssetDesc" placeholder="وصف الجهاز" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">الرقم التسلسلي <span style="color: #ef4444;">*</span></label>
-                    <input type="text" class="form-input" id="modalSN" placeholder="S/N" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">الحالة</label>
-                    <select class="form-select" id="modalStatus">
-                        <option value="Good">Good</option>
-                        <option value="Needs maintenance">Needs maintenance</option>
-                        <option value="Outdated">Outdated</option>
-                        <option value="">غير محدد</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">حالة الفحص</label>
-                    <select class="form-select" id="modalCheck">
-                        <option value="Checked">Checked</option>
-                        <option value="Not Checked">Not Checked</option>
-                    </select>
-                </div>
-                <div class="form-group full-width">
-                    <label class="form-label">ملاحظات</label>
-                    <input type="text" class="form-input" id="modalComments" placeholder="ملاحظات">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">QR Code</label>
-                    <input type="text" class="form-input" id="modalQR" placeholder="QR Code">
-                </div>
-                <div class="form-group full-width">
-                    <label class="form-label">تعليق المخازن</label>
-                    <input type="text" class="form-input" id="modalWarehouse" placeholder="تعليق المخازن">
-                </div>
-            `;
-            
-            const modalForm = document.getElementById('modalForm');
-            if (modalForm) modalForm.innerHTML = formHtml;
-            
-            const assetModal = document.getElementById('assetModal');
-            if (assetModal) assetModal.classList.add('active');
+        
+        function closeColumnFiltersModal() {
+            document.getElementById('columnFiltersModal').classList.remove('active');
         }
-
-        function editAsset(id) {
-            const t = translations[currentLang];
-            const asset = assetsData.find(a => a.id === id);
-            if (!asset) return;
-            editingId = id;
+        
+        function toggleAllColumns() {
+            const checkboxes = document.querySelectorAll('.column-filter-item input[type="checkbox"]');
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
             
-            const modalTitle = document.getElementById('modalTitle');
-            if (modalTitle) modalTitle.textContent = t.modalEdit;
-            
-            const existingLocations = [...new Set(assetsData.map(a => a.Location))].filter(Boolean);
-            const existingTypes = [...new Set(assetsData.map(a => a['Asset Type']))].filter(Boolean);
-            
-            const formHtml = `
-                <div class="form-group">
-                    <label class="form-label">الموقع <span style="color: #ef4444;">*</span></label>
-                    <div style="display: flex; gap: 8px;">
-                        <select class="form-select" id="modalLocation" style="flex: 1;">
-                            <option value="">اختر الموقع أو أضف جديد</option>
-                            ${existingLocations.map(l => `<option value="${l}" ${asset.Location === l ? 'selected' : ''}>${l}</option>`).join('')}
-                        </select>
-                        <button type="button" class="btn-secondary" onclick="toggleLocationInput()" style="padding: 8px 12px; white-space: nowrap;">إضافة جديد</button>
-                    </div>
-                    <input type="text" class="form-input" id="modalLocationNew" placeholder="أدخل موقع جديد" style="display: none; margin-top: 8px;" value="${!existingLocations.includes(asset.Location) ? asset.Location : ''}">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">وصف الموقع</label>
-                    <input type="text" class="form-input" id="modalLocationDesc" value="${asset['Location Description'] || ''}">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">رقم الموظف</label>
-                    <input type="text" class="form-input" id="modalEmpNum" value="${asset['Employee Number'] || ''}">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">اسم الموظف</label>
-                    <input type="text" class="form-input" id="modalFullName" value="${asset['Full Name'] || ''}">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">رقم الأصل <span style="color: #ef4444;">*</span></label>
-                    <input type="text" class="form-input" id="modalAssetNum" value="${asset['Asset Number'] || ''}" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">مفتاح الأصل</label>
-                    <input type="text" class="form-input" id="modalAssetKey" value="${asset['Asset Key'] || ''}">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">نوع الجهاز <span style="color: #ef4444;">*</span></label>
-                    <div style="display: flex; gap: 8px;">
-                        <select class="form-select" id="modalAssetType" style="flex: 1;">
-                            <option value="">اختر نوع الجهاز أو أضف جديد</option>
-                            ${existingTypes.map(t => `<option value="${t}" ${asset['Asset Type'] === t ? 'selected' : ''}>${t}</option>`).join('')}
-                        </select>
-                        <button type="button" class="btn-secondary" onclick="toggleTypeInput()" style="padding: 8px 12px; white-space: nowrap;">إضافة جديد</button>
-                    </div>
-                    <input type="text" class="form-input" id="modalAssetTypeNew" placeholder="أدخل نوع جهاز جديد" style="display: none; margin-top: 8px;" value="${!existingTypes.includes(asset['Asset Type']) ? asset['Asset Type'] : ''}">
-                </div>
-                <div class="form-group full-width">
-                    <label class="form-label">وصف الجهاز <span style="color: #ef4444;">*</span></label>
-                    <input type="text" class="form-input" id="modalAssetDesc" value="${asset['Asset Description'] || ''}" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">الرقم التسلسلي <span style="color: #ef4444;">*</span></label>
-                    <input type="text" class="form-input" id="modalSN" value="${asset['S/N'] || ''}" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">الحالة</label>
-                    <select class="form-select" id="modalStatus">
-                        <option value="Good" ${asset.Status === 'Good' ? 'selected' : ''}>Good</option>
-                        <option value="Needs maintenance" ${asset.Status === 'Needs maintenance' ? 'selected' : ''}>Needs maintenance</option>
-                        <option value="Outdated" ${asset.Status === 'Outdated' ? 'selected' : ''}>Outdated</option>
-                        <option value="" ${!asset.Status ? 'selected' : ''}>غير محدد</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">حالة الفحص</label>
-                    <select class="form-select" id="modalCheck">
-                        <option value="Checked" ${asset['Check status'] === 'Checked' ? 'selected' : ''}>Checked</option>
-                        <option value="Not Checked" ${asset['Check status'] === 'Not Checked' ? 'selected' : ''}>Not Checked</option>
-                    </select>
-                </div>
-                <div class="form-group full-width">
-                    <label class="form-label">ملاحظات</label>
-                    <input type="text" class="form-input" id="modalComments" value="${asset.Comments || ''}">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">QR Code</label>
-                    <input type="text" class="form-input" id="modalQR" value="${asset['QR Code'] || ''}">
-                </div>
-                <div class="form-group full-width">
-                    <label class="form-label">تعليق المخازن</label>
-                    <input type="text" class="form-input" id="modalWarehouse" value="${asset['تعليق المخازن'] || ''}">
-                </div>
-            `;
-            
-            const modalForm = document.getElementById('modalForm');
-            if (modalForm) modalForm.innerHTML = formHtml;
-            
-            const assetModal = document.getElementById('assetModal');
-            if (assetModal) assetModal.classList.add('active');
-        }
-
-        function saveAsset() {
-            let location = document.getElementById('modalLocation')?.value;
-            const locationNew = document.getElementById('modalLocationNew')?.value.trim();
-            if (locationNew) {
-                location = locationNew;
-            }
-            
-            let assetType = document.getElementById('modalAssetType')?.value;
-            const assetTypeNew = document.getElementById('modalAssetTypeNew')?.value.trim();
-            if (assetTypeNew) {
-                assetType = assetTypeNew;
-            }
-            
-            const assetNum = document.getElementById('modalAssetNum')?.value.trim();
-            const assetDesc = document.getElementById('modalAssetDesc')?.value.trim();
-            const sn = document.getElementById('modalSN')?.value.trim();
-            
-            if (!location) {
-                showAlert('يجب إدخال الموقع', 'error');
-                return;
-            }
-            if (!assetType) {
-                showAlert('يجب إدخال نوع الجهاز', 'error');
-                return;
-            }
-            if (!assetNum) {
-                showAlert('يجب إدخال رقم الأصل', 'error');
-                return;
-            }
-            if (!assetDesc) {
-                showAlert('يجب إدخال وصف الجهاز', 'error');
-                return;
-            }
-            if (!sn) {
-                showAlert('يجب إدخال الرقم التسلسلي', 'error');
-                return;
-            }
-            
-            if (!editingId) {
-                const existingSN = assetsData.find(a => a['S/N'] === sn);
-                if (existingSN) {
-                    showAlert('الرقم التسلسلي موجود بالفعل', 'error');
-                    return;
-                }
-            }
-            
-            const assetData = {
-                Location: location,
-                'Location Description': document.getElementById('modalLocationDesc')?.value || '',
-                'Employee Number': document.getElementById('modalEmpNum')?.value || '',
-                'Full Name': document.getElementById('modalFullName')?.value || '',
-                'Asset Number': assetNum,
-                'Asset Key': document.getElementById('modalAssetKey')?.value || '',
-                'Asset Type': assetType,
-                'Asset Description': assetDesc,
-                'S/N': sn,
-                Status: document.getElementById('modalStatus')?.value || '',
-                Comments: document.getElementById('modalComments')?.value || '',
-                'QR Code': document.getElementById('modalQR')?.value || '',
-                'Check status': document.getElementById('modalCheck')?.value || 'Not Checked',
-                'تعليق المخازن': document.getElementById('modalWarehouse')?.value || ''
-            };
-            
-            if (editingId) {
-                const index = assetsData.findIndex(a => a.id === editingId);
-                if (index !== -1) {
-                    assetsData[index] = { ...assetsData[index], ...assetData };
-                }
-            } else {
-                const newId = Math.max(...assetsData.map(a => a.id), 0) + 1;
-                assetsData.push({ id: newId, ...assetData });
-            }
-            
-            filteredData = [...assetsData];
-            closeModal();
-            populateFilters();
-            updateUI();
-            applyFilter();
-            saveToLocalStorage();
-            
-            if (sourceFile.type && sourceFile.connectionType === 'sync') {
-                syncWithSourceFile().catch(e => console.error('فشل المزامنة:', e));
-            }
-            
-            showAlert('تم حفظ البيانات بنجاح', 'success');
-        }
-
-        function closeModal() {
-            const assetModal = document.getElementById('assetModal');
-            if (assetModal) assetModal.classList.remove('active');
-            editingId = null;
-        }
-
-        function deleteAsset(id) {
-            const t = translations[currentLang];
-            if (!confirm(t.confirmDelete)) return;
-            
-            assetsData = assetsData.filter(a => a.id !== id);
-            filteredData = filteredData.filter(a => a.id !== id);
-            
-            populateFilters();
-            applyFilter();
-            updateUI();
-            saveToLocalStorage();
-            
-            if (sourceFile.type && sourceFile.connectionType === 'sync') {
-                syncWithSourceFile().catch(e => console.error('فشل المزامنة:', e));
-            }
-            
-            showAlert('تم حذف الجهاز', 'info');
-        }
-
-        function toggleLocationInput() {
-            const select = document.getElementById('modalLocation');
-            const input = document.getElementById('modalLocationNew');
-            if (input && select) {
-                if (input.style.display === 'none') {
-                    input.style.display = 'block';
-                    select.value = '';
-                    input.focus();
-                } else {
-                    input.style.display = 'none';
-                    input.value = '';
-                }
-            }
-        }
-
-        function toggleTypeInput() {
-            const select = document.getElementById('modalAssetType');
-            const input = document.getElementById('modalAssetTypeNew');
-            if (input && select) {
-                if (input.style.display === 'none') {
-                    input.style.display = 'block';
-                    select.value = '';
-                    input.focus();
-                } else {
-                    input.style.display = 'none';
-                    input.value = '';
-                }
-            }
-        }
-
-        // ==================== حفظ وتحميل من localStorage ====================
-        function saveToLocalStorage() {
-            localStorage.setItem('assetsData', JSON.stringify(assetsData));
-            updateLastUpdate();
-            showAlert(translations[currentLang].saved, 'success');
-        }
-
-        function loadFromLocalStorage() {
-            const saved = localStorage.getItem('assetsData');
-            if (saved) {
-                try {
-                    assetsData = JSON.parse(saved);
-                    filteredData = [...assetsData];
-                    populateFilters();
-                    updateUI();
-                } catch (e) {
-                    console.error('خطأ في تحميل البيانات المحفوظة');
-                    const oldData = localStorage.getItem('assetsDataOld');
-                    if (oldData) assetsData = JSON.parse(oldData);
-                }
-            }
-        }
-
-        // ==================== تصدير إلى Excel ====================
-        function exportToExcel() {
-            const worksheet = XLSX.utils.json_to_sheet(filteredData);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, 'Assets');
-            XLSX.writeFile(workbook, `samcrete_assets_${new Date().toISOString().slice(0,10)}.xlsx`);
-        }
-
-        // ==================== طباعة QR Code ====================
-        function printBarcode(id) {
-            const asset = assetsData.find(a => a.id === id);
-            if (!asset) return;
-
-            const qrValue = JSON.stringify({
-                id: asset.id,
-                type: asset['Asset Type'] || 'جهاز',
-                sn: asset['S/N'] || '---',
-                name: asset['Full Name'] || '',
-                location: asset.Location || '',
-                company: 'Samcrete Egypt'
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = !allChecked;
+                const col = checkbox.id.replace('col-', '');
+                visibleColumns[col] = !allChecked;
             });
-
-            const printWindow = window.open('', '_blank');
-            const htmlContent = `
-                <!DOCTYPE html>
-                <html dir="rtl">
-                <head>
-                    <meta charset="UTF-8">
-                    <title>طباعة QR Code</title>
-                    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"><\/script>
-                    <style>
-                        body {
-                            padding: 20px;
-                            font-family: Arial, sans-serif;
-                            text-align: center;
-                            background: #f5f5f5;
-                        }
-                        .qr-container {
-                            background: white;
-                            border: 2px solid #1e3c72;
-                            padding: 20px;
-                            display: inline-block;
-                            margin: 20px;
-                            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-                            border-radius: 10px;
-                        }
-                        .asset-info {
-                            margin-top: 15px;
-                            font-size: 12px;
-                            line-height: 1.8;
-                            color: #333;
-                        }
-                        h4 {
-                            color: #1e3c72;
-                            margin: 10px 0 5px 0;
-                        }
-                        canvas {
-                            max-width: 200px;
-                            height: 200px;
-                        }
-                        @media print {
-                            body { padding: 0; background: white; }
-                            .qr-container { margin: 10px; box-shadow: none; }
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class="qr-container">
-                        <div id="qrcode"></div>
-                        <div class="asset-info">
-                            <h4>${asset['Asset Type'] || 'جهاز'}</h4>
-                            <div>الرقم: ${asset['S/N'] || '---'}</div>
-                            <div>${asset['Full Name'] || ''}</div>
-                            <div style="margin-top: 8px; border-top: 1px solid #e0e7ff; padding-top: 8px;">
-                                <div>${asset.Location || ''}</div>
-                                <div style="color: #666; font-size: 11px;">Samcrete Egypt</div>
-                            </div>
-                        </div>
-                    </div>
-                    <script>
-                        window.onload = function() {
-                            const canvas = document.createElement('canvas');
-                            QRCode.toCanvas(canvas, '${qrValue}', {
-                                width: 200,
-                                height: 200,
-                                margin: 2,
-                                color: {
-                                    dark: "#1e3c72",
-                                    light: "#ffffff"
-                                },
-                                errorCorrectionLevel: 'H'
-                            }, function(error) {
-                                if (error) {
-                                    console.error(error);
-                                    return;
-                                }
-                                document.getElementById('qrcode').appendChild(canvas);
-                                setTimeout(() => window.print(), 800);
-                            });
-                        };
-                    <\/script>
-                </body>
-                </html>
-            `;
-            printWindow.document.write(htmlContent);
-            printWindow.document.close();
+            
+            renderTable();
         }
-
-        // ==================== دوال مساعدة ====================
-        function updateLastUpdate() {
-            const now = new Date();
-            const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-            const lastUpdate = document.getElementById('lastUpdate');
-            if (lastUpdate) {
-                lastUpdate.textContent = now.toLocaleDateString('ar-EG', options);
-            }
-        }
-
-        function showAlert(message, type = 'info') {
+        
+        // Show Alert
+        function showAlert(message, type) {
             const alert = document.createElement('div');
             alert.className = `alert alert-${type}`;
             alert.textContent = message;
@@ -3439,995 +1430,49 @@
                 alert.remove();
             }, 3000);
         }
-
-        // ==================== إدارة الأعمدة الإضافية ====================
-        function showColumnMapper() {
-            const modal = document.getElementById('columnMapperModal');
-            if (modal) modal.classList.add('active');
-        }
-
-        function closeColumnMapper() {
-            const modal = document.getElementById('columnMapperModal');
-            if (modal) modal.classList.remove('active');
-            
-            const newColumnName = document.getElementById('newColumnName');
-            const columnType = document.getElementById('columnType');
-            const selectOptions = document.getElementById('selectOptions');
-            const selectOptionsGroup = document.getElementById('selectOptionsGroup');
-            
-            if (newColumnName) newColumnName.value = '';
-            if (columnType) columnType.value = 'text';
-            if (selectOptions) selectOptions.value = '';
-            if (selectOptionsGroup) selectOptionsGroup.style.display = 'none';
-        }
-
-        document.getElementById('columnType')?.addEventListener('change', function() {
-            const selectGroup = document.getElementById('selectOptionsGroup');
-            if (selectGroup) {
-                selectGroup.style.display = this.value === 'select' ? 'block' : 'none';
-            }
-        });
-
-        function addNewColumn() {
-            const columnName = document.getElementById('newColumnName')?.value.trim();
-            const columnType = document.getElementById('columnType')?.value;
-            const selectOptions = document.getElementById('selectOptions')?.value.trim();
-
-            if (!columnName) {
-                showAlert('يرجى إدخال اسم العمود', 'error');
-                return;
-            }
-
-            if (columnType === 'select' && !selectOptions) {
-                showAlert('يرجى إدخال الخيارات', 'error');
-                return;
-            }
-
-            const newColumn = {
-                name: columnName,
-                type: columnType,
-                options: columnType === 'select' ? selectOptions.split(',').map(o => o.trim()) : []
-            };
-
-            extraColumns.push(newColumn);
-            
-            assetsData.forEach(asset => {
-                asset[columnName] = '';
-            });
-
-            refreshAvailableColumns();
-            initVisibleColumns();
-            
-            saveColumnPreferences();
-            
-            closeColumnMapper();
-            updateUI();
-            saveToLocalStorage();
-            showAlert(`تم إضافة العمود "${columnName}" بنجاح`, 'success');
-        }
-
-        // ==================== إدارة إعدادات الأعمدة ====================
-        function showColumnSettings() {
-            renderColumnSettings();
-            const modal = document.getElementById('columnSettingsModal');
-            if (modal) modal.classList.add('active');
-        }
-
-        function closeColumnSettings() {
-            const modal = document.getElementById('columnSettingsModal');
-            if (modal) modal.classList.remove('active');
-        }
-
-        function renderColumnSettings() {
-            const container = document.getElementById('columnSettingsList');
-            if (!container) return;
-
-            const allCols = Array.from(new Set([...availableColumns, ...visibleColumns, '__actions']));
-
-            container.innerHTML = allCols.map((col, idx) => {
-                const isActions = col === '__actions';
-                const label = getColumnLabel(col);
-                const checked = isActions || visibleColumns.includes(col);
-
-                return `
-                    <div class="column-item" data-col="${col}" style="display: flex; align-items: center; justify-content: space-between; padding: 10px; border-bottom: 1px solid #e5e7eb;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <input type="checkbox" ${checked ? 'checked' : ''} ${isActions ? 'disabled' : ''} onchange="toggleColumnVisibility('${col}', this.checked)">
-                            <span>${label}</span>
-                        </div>
-                        <div>
-                            <button onclick="moveColumn('${col}', -1)" style="margin-right: 6px;">⬆</button>
-                            <button onclick="moveColumn('${col}', 1)">⬇</button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function toggleColumnVisibility(column, visible) {
-            if (!visible) {
-                visibleColumns = visibleColumns.filter(c => c !== column);
-            } else if (!visibleColumns.includes(column)) {
-                visibleColumns.splice(visibleColumns.length - 1, 0, column);
-            }
-            
-            saveColumnPreferences();
-            updateUI();
-        }
-
-        function moveColumn(column, direction) {
-            const idx = visibleColumns.indexOf(column);
-            if (idx === -1) return;
-            const newIndex = idx + direction;
-            if (newIndex < 0 || newIndex >= visibleColumns.length - 1) return;
-            const temp = visibleColumns[newIndex];
-            visibleColumns[newIndex] = visibleColumns[idx];
-            visibleColumns[idx] = temp;
-            
-            saveColumnPreferences();
-            renderColumnSettings();
-            updateUI();
-        }
-
-        function saveColumnSettings() {
-            saveColumnPreferences();
-            saveToLocalStorage();
-            showAlert('تم حفظ إعدادات الأعمدة', 'success');
-            closeColumnSettings();
-        }
-
-        // ==================== OneDrive Integration ====================
-        function escapeHtml(str) {
-            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-        }
-
-        let msalInstance = null;
-        let oneDriveAccessToken = null;
-        let oneDriveConfig = {
-            clientId: null,
-            redirectUri: null,
-            fileId: null,
-            fileName: null,
-            driveId: null,
-            lastSync: null,
-            autoSync: true
-        };
-        let oneDriveAutoSyncInterval = null;
-        let oneDriveFolderStack = []; // navigation history for file browser
-
-        function loadOneDriveConfig() {
-            const saved = localStorage.getItem('oneDriveConfig');
-            if (saved) {
-                try {
-                    const parsed = JSON.parse(saved);
-                    Object.assign(oneDriveConfig, parsed);
-                } catch (e) {
-                    console.error('خطأ في تحميل إعدادات OneDrive:', e);
-                }
-            }
-            // Populate UI fields
-            const clientIdEl = document.getElementById('oneDriveClientId');
-            const redirectEl = document.getElementById('oneDriveRedirectUri');
-            if (clientIdEl && oneDriveConfig.clientId) clientIdEl.value = oneDriveConfig.clientId;
-            if (redirectEl && oneDriveConfig.redirectUri) {
-                redirectEl.value = oneDriveConfig.redirectUri;
-            } else if (redirectEl) {
-                redirectEl.value = window.location.href.split('?')[0].split('#')[0];
-            }
-            
-            if (oneDriveConfig.clientId) {
-                initMsal();
-            }
-            
-            updateOneDriveUI();
-        }
-
-        function saveOneDriveConfigToStorage() {
-            localStorage.setItem('oneDriveConfig', JSON.stringify(oneDriveConfig));
-        }
-
-        function saveOneDriveConfig() {
-            const clientId = document.getElementById('oneDriveClientId')?.value.trim();
-            const redirectUri = document.getElementById('oneDriveRedirectUri')?.value.trim();
-            
-            if (!clientId) {
-                showAlert('يرجى إدخال Client ID', 'error');
-                return;
-            }
-            if (!redirectUri) {
-                showAlert('يرجى إدخال Redirect URI', 'error');
-                return;
-            }
-
-            oneDriveConfig.clientId = clientId;
-            oneDriveConfig.redirectUri = redirectUri;
-            saveOneDriveConfigToStorage();
-            
-            initMsal();
-            showAlert('تم حفظ إعدادات OneDrive بنجاح', 'success');
-        }
-
-        function initMsal() {
-            if (!oneDriveConfig.clientId) return;
-            
-            try {
-                const msalConfig = {
-                    auth: {
-                        clientId: oneDriveConfig.clientId,
-                        authority: 'https://login.microsoftonline.com/common',
-                        redirectUri: oneDriveConfig.redirectUri || window.location.href.split('?')[0].split('#')[0]
-                    },
-                    cache: {
-                        cacheLocation: 'localStorage',
-                        storeAuthStateInCookie: false
-                    }
-                };
-                
-                msalInstance = new msal.PublicClientApplication(msalConfig);
-                
-                // Handle redirect response
-                msalInstance.handleRedirectPromise().then(response => {
-                    if (response) {
-                        oneDriveAccessToken = response.accessToken;
-                        updateOneDriveUI();
-                        if (oneDriveConfig.fileId) {
-                            showOneDriveConnectedFile();
-                        } else {
-                            listOneDriveFiles();
-                        }
-                    }
-                }).catch(err => {
-                    console.error('MSAL redirect error:', err);
-                });
-                
-                // Check if already signed in
-                const accounts = msalInstance.getAllAccounts();
-                if (accounts.length > 0) {
-                    acquireTokenSilent().then(() => {
-                        updateOneDriveUI();
-                    }).catch(() => {});
-                }
-                
-                console.log('MSAL initialized successfully');
-            } catch (e) {
-                console.error('خطأ في تهيئة MSAL:', e);
-                showAlert('خطأ في تهيئة مكتبة المصادقة: ' + e.message, 'error');
-            }
-        }
-
-        async function acquireTokenSilent() {
-            if (!msalInstance) return null;
-            const accounts = msalInstance.getAllAccounts();
-            if (accounts.length === 0) return null;
-            
-            try {
-                const response = await msalInstance.acquireTokenSilent({
-                    scopes: ['Files.ReadWrite', 'User.Read'],
-                    account: accounts[0]
-                });
-                oneDriveAccessToken = response.accessToken;
-                return response.accessToken;
-            } catch (e) {
-                console.warn('Silent token acquisition failed, need interactive login:', e);
-                oneDriveAccessToken = null;
-                return null;
-            }
-        }
-
-        async function signInToOneDrive() {
-            if (!msalInstance) {
-                saveOneDriveConfig();
-                if (!msalInstance) {
-                    showAlert('يرجى إدخال Client ID أولاً', 'error');
-                    return;
-                }
-            }
-            
-            try {
-                const loginResponse = await msalInstance.loginPopup({
-                    scopes: ['Files.ReadWrite', 'User.Read'],
-                    prompt: 'select_account'
-                });
-                
-                oneDriveAccessToken = loginResponse.accessToken;
-                updateOneDriveUI();
-                
-                if (oneDriveConfig.fileId) {
-                    showOneDriveConnectedFile();
-                } else {
-                    listOneDriveFiles();
-                }
-                
-                showAlert('تم تسجيل الدخول بنجاح', 'success');
-            } catch (e) {
-                console.error('خطأ في تسجيل الدخول:', e);
-                if (e.errorCode !== 'user_cancelled') {
-                    showAlert('فشل تسجيل الدخول: ' + (e.errorMessage || e.message), 'error');
-                }
-            }
-        }
-
-        async function signOutFromOneDrive() {
-            if (!msalInstance) return;
-            
-            try {
-                const accounts = msalInstance.getAllAccounts();
-                if (accounts.length > 0) {
-                    await msalInstance.logoutPopup({
-                        account: accounts[0]
-                    });
-                }
-            } catch (e) {
-                console.error('خطأ في تسجيل الخروج:', e);
-            }
-            
-            oneDriveAccessToken = null;
-            disconnectOneDrive();
-            updateOneDriveUI();
-            showAlert('تم تسجيل الخروج', 'info');
-        }
-
-        function updateOneDriveUI() {
-            const signInSection = document.getElementById('oneDriveSignInSection');
-            const userInfo = document.getElementById('oneDriveUserInfo');
-            const fileBrowser = document.getElementById('oneDriveFileBrowser');
-            const connectedFile = document.getElementById('oneDriveConnectedFile');
-            
-            if (!msalInstance) {
-                if (signInSection) signInSection.style.display = 'block';
-                if (userInfo) userInfo.style.display = 'none';
-                if (fileBrowser) fileBrowser.style.display = 'none';
-                if (connectedFile) connectedFile.style.display = 'none';
-                return;
-            }
-            
-            const accounts = msalInstance.getAllAccounts();
-            const isSignedIn = accounts.length > 0 && oneDriveAccessToken;
-            
-            if (signInSection) signInSection.style.display = isSignedIn ? 'none' : 'block';
-            if (userInfo) {
-                userInfo.style.display = isSignedIn ? 'block' : 'none';
-                if (isSignedIn && accounts[0]) {
-                    const nameEl = document.getElementById('oneDriveUserName');
-                    const emailEl = document.getElementById('oneDriveUserEmail');
-                    if (nameEl) nameEl.textContent = accounts[0].name || accounts[0].username;
-                    if (emailEl) emailEl.textContent = accounts[0].username;
-                }
-            }
-            
-            if (isSignedIn && oneDriveConfig.fileId) {
-                if (fileBrowser) fileBrowser.style.display = 'none';
-                if (connectedFile) {
-                    connectedFile.style.display = 'block';
-                    showOneDriveConnectedFile();
-                }
-            } else if (isSignedIn) {
-                if (fileBrowser) fileBrowser.style.display = 'block';
-                if (connectedFile) connectedFile.style.display = 'none';
-            } else {
-                if (fileBrowser) fileBrowser.style.display = 'none';
-                if (connectedFile) connectedFile.style.display = 'none';
-            }
-        }
-
-        function showOneDriveConnectedFile() {
-            const fileNameEl = document.getElementById('connectedOneDriveFileName');
-            const lastSyncEl = document.getElementById('connectedOneDriveLastSync');
-            
-            if (fileNameEl) fileNameEl.textContent = oneDriveConfig.fileName || 'ملف غير معروف';
-            if (lastSyncEl) {
-                lastSyncEl.textContent = oneDriveConfig.lastSync 
-                    ? 'آخر مزامنة: ' + new Date(oneDriveConfig.lastSync).toLocaleString('ar-EG')
-                    : 'لم يتم المزامنة بعد';
-            }
-        }
-
-        async function graphApiCall(endpoint, options = {}) {
-            if (!oneDriveAccessToken) {
-                const token = await acquireTokenSilent();
-                if (!token) {
-                    showAlert('يرجى تسجيل الدخول أولاً', 'error');
-                    throw new Error('No access token');
-                }
-            }
-            
-            const url = endpoint.startsWith('http') ? endpoint : `https://graph.microsoft.com/v1.0${endpoint}`;
-            const response = await fetch(url, {
-                ...options,
-                headers: {
-                    'Authorization': `Bearer ${oneDriveAccessToken}`,
-                    ...(options.headers || {})
-                }
-            });
-            
-            if (response.status === 401) {
-                // Token expired, try to refresh
-                const newToken = await acquireTokenSilent();
-                if (newToken) {
-                    const retryResponse = await fetch(url, {
-                        ...options,
-                        headers: {
-                            'Authorization': `Bearer ${newToken}`,
-                            ...(options.headers || {})
-                        }
-                    });
-                    if (!retryResponse.ok) throw new Error(`API Error: ${retryResponse.status}`);
-                    if (retryResponse.status === 204) return null;
-                    return retryResponse.json();
-                }
-                throw new Error('Token expired, please sign in again');
-            }
-            
-            if (!response.ok) {
-                const errBody = await response.text();
-                console.error('Graph API Error:', errBody);
-                throw new Error(`API Error: ${response.status}`);
-            }
-            
-            if (response.status === 204) return null;
-            return response.json();
-        }
-
-        async function listOneDriveFiles(folderId = null) {
-            try {
-                const fileListEl = document.getElementById('oneDriveFileList');
-                const pathEl = document.getElementById('oneDrivePath');
-                const backBtn = document.getElementById('oneDriveBackBtn');
-                const fileBrowser = document.getElementById('oneDriveFileBrowser');
-                
-                if (fileBrowser) fileBrowser.style.display = 'block';
-                if (fileListEl) fileListEl.innerHTML = '<div style="text-align: center; padding: 30px; color: #888;"><i class="fas fa-spinner fa-spin" style="font-size: 2em;"></i><br>جاري التحميل...</div>';
-                
-                let endpoint;
-                if (folderId) {
-                    endpoint = `/me/drive/items/${folderId}/children?$orderby=name&$top=100`;
-                } else {
-                    endpoint = '/me/drive/root/children?$orderby=name&$top=100';
-                }
-                
-                const data = await graphApiCall(endpoint);
-                
-                if (backBtn) {
-                    backBtn.style.display = oneDriveFolderStack.length > 0 ? 'inline-flex' : 'none';
-                }
-                
-                if (pathEl) {
-                    const pathParts = oneDriveFolderStack.map(f => f.name);
-                    pathEl.textContent = '/ ' + (pathParts.length > 0 ? pathParts.join(' / ') : 'الجذر');
-                }
-                
-                if (!data.value || data.value.length === 0) {
-                    if (fileListEl) fileListEl.innerHTML = '<div style="text-align: center; padding: 20px; color: #888;">لا توجد ملفات</div>';
-                    return;
-                }
-                
-                const items = data.value.filter(item => {
-                    if (item.folder) return true;
-                    const name = (item.name || '').toLowerCase();
-                    return name.endsWith('.xlsx') || name.endsWith('.xls') || name.endsWith('.csv');
-                });
-                
-                if (items.length === 0) {
-                    if (fileListEl) fileListEl.innerHTML = '<div style="text-align: center; padding: 20px; color: #888;">لا توجد ملفات Excel في هذا المجلد</div>';
-                    return;
-                }
-                
-                if (fileListEl) {
-                    fileListEl.innerHTML = '';
-                    items.forEach(item => {
-                        const isFolder = !!item.folder;
-                        const icon = isFolder ? 'fa-folder' : (item.name.toLowerCase().endsWith('.csv') ? 'fa-file-csv' : 'fa-file-excel');
-                        const iconColor = isFolder ? '#f59e0b' : '#10b981';
-                        const size = item.size ? formatFileSize(item.size) : '';
-                        const modified = item.lastModifiedDateTime ? new Date(item.lastModifiedDateTime).toLocaleString('ar-EG') : '';
-                        
-                        const row = document.createElement('div');
-                        row.style.cssText = 'padding: 12px 15px; border-bottom: 1px solid #f0f0f0; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: background 0.2s;';
-                        row.addEventListener('mouseover', () => row.style.background = '#f0f9ff');
-                        row.addEventListener('mouseout', () => row.style.background = 'transparent');
-                        row.addEventListener('click', () => {
-                            if (isFolder) {
-                                navigateOneDriveFolder(item.id, item.name);
-                            } else {
-                                selectOneDriveFile(item.id, item.name, item.parentReference?.driveId || '');
-                            }
-                        });
-                        
-                        const iconEl = document.createElement('i');
-                        iconEl.className = `fas ${icon}`;
-                        iconEl.style.cssText = `font-size: 1.5em; color: ${iconColor}; width: 30px; text-align: center;`;
-                        row.appendChild(iconEl);
-                        
-                        const infoDiv = document.createElement('div');
-                        infoDiv.style.flex = '1';
-                        const nameDiv = document.createElement('div');
-                        nameDiv.style.cssText = 'font-weight: 600; color: #333;';
-                        nameDiv.textContent = item.name;
-                        infoDiv.appendChild(nameDiv);
-                        const metaDiv = document.createElement('div');
-                        metaDiv.style.cssText = 'font-size: 0.8em; color: #888;';
-                        metaDiv.textContent = `${size}${size && modified ? ' \u2022 ' : ''}${modified}`;
-                        infoDiv.appendChild(metaDiv);
-                        row.appendChild(infoDiv);
-                        
-                        const trailIcon = document.createElement('i');
-                        trailIcon.className = isFolder ? 'fas fa-chevron-left' : 'fas fa-link';
-                        trailIcon.style.color = isFolder ? '#ccc' : '#0078d4';
-                        row.appendChild(trailIcon);
-                        
-                        fileListEl.appendChild(row);
-                    });
-                }
-            } catch (e) {
-                console.error('خطأ في عرض ملفات OneDrive:', e);
-                const fileListEl = document.getElementById('oneDriveFileList');
-                if (fileListEl) fileListEl.innerHTML = `<div style="text-align: center; padding: 20px; color: #ef4444;"><i class="fas fa-exclamation-triangle"></i> خطأ في تحميل الملفات: ${e.message}</div>`;
-            }
-        }
-
-        function formatFileSize(bytes) {
-            if (bytes < 1024) return bytes + ' B';
-            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-        }
-
-        function navigateOneDriveFolder(folderId, folderName) {
-            oneDriveFolderStack.push({ id: folderId, name: folderName });
-            listOneDriveFiles(folderId);
-        }
-
-        function navigateOneDriveBack() {
-            oneDriveFolderStack.pop();
-            const parentFolder = oneDriveFolderStack.length > 0 ? oneDriveFolderStack[oneDriveFolderStack.length - 1].id : null;
-            listOneDriveFiles(parentFolder);
-        }
-
-        function refreshOneDriveFiles() {
-            const currentFolder = oneDriveFolderStack.length > 0 ? oneDriveFolderStack[oneDriveFolderStack.length - 1].id : null;
-            listOneDriveFiles(currentFolder);
-        }
-
-        async function selectOneDriveFile(fileId, fileName, driveId) {
-            if (!confirm(`هل تريد ربط الملف "${fileName}"؟\nسيتم تحميل بيانات هذا الملف وعرضها.`)) return;
-            
-            oneDriveConfig.fileId = fileId;
-            oneDriveConfig.fileName = fileName;
-            oneDriveConfig.driveId = driveId || null;
-            saveOneDriveConfigToStorage();
-            
-            // Update source file info
-            sourceFile.type = 'onedrive';
-            sourceFile.name = fileName;
-            sourceFile.connectionType = 'sync';
-            saveSourceFileInfo();
-            updateFileStatus();
-            
-            // Download and display the file
-            try {
-                await syncFromOneDrive();
-            } catch (e) {
-                console.error('خطأ في تحميل ملف OneDrive:', e);
-                showAlert('فشل تحميل الملف: ' + e.message, 'error');
-            }
-            
-            updateOneDriveUI();
-            showAlert(`تم ربط الملف "${fileName}" بنجاح`, 'success');
-            
-            // Start auto sync if enabled
-            if (oneDriveConfig.autoSync) {
-                startOneDriveAutoSync();
-            }
-        }
-
-        async function syncFromOneDrive() {
-            if (!oneDriveConfig.fileId) {
-                showAlert('لا يوجد ملف متصل', 'error');
-                throw new Error('لا يوجد ملف متصل');
-            }
-            
-            showAlert('جاري تحميل البيانات من OneDrive...', 'info');
-            
-            // Ensure we have a valid token
-            if (!oneDriveAccessToken) {
-                const token = await acquireTokenSilent();
-                if (!token) {
-                    showAlert('يرجى تسجيل الدخول أولاً', 'error');
-                    throw new Error('يرجى تسجيل الدخول أولاً');
-                }
-            }
-            
-            // Download file content
-            const downloadUrl = `https://graph.microsoft.com/v1.0/me/drive/items/${oneDriveConfig.fileId}/content`;
-            const response = await fetch(downloadUrl, {
-                headers: { 'Authorization': `Bearer ${oneDriveAccessToken}` }
-            });
-            
-            if (response.status === 401) {
-                const newToken = await acquireTokenSilent();
-                if (!newToken) {
-                    showAlert('انتهت الجلسة، يرجى تسجيل الدخول مرة أخرى', 'error');
-                    throw new Error('انتهت الجلسة، يرجى تسجيل الدخول مرة أخرى');
-                }
-                const retryResponse = await fetch(downloadUrl, {
-                    headers: { 'Authorization': `Bearer ${newToken}` }
-                });
-                if (!retryResponse.ok) throw new Error('فشل تحميل الملف');
-                await processOneDriveFileResponse(retryResponse);
-            } else if (!response.ok) {
-                throw new Error('فشل تحميل الملف: ' + response.status);
-            } else {
-                await processOneDriveFileResponse(response);
-            }
-            
-            oneDriveConfig.lastSync = new Date().toISOString();
-            saveOneDriveConfigToStorage();
-            showOneDriveConnectedFile();
-            
-            sourceFile.lastSync = new Date();
-            saveSourceFileInfo();
-            updateFileStatus();
-        }
-
-        async function processOneDriveFileResponse(response) {
-            const arrayBuffer = await response.arrayBuffer();
-            const data = new Uint8Array(arrayBuffer);
-            const workbook = XLSX.read(data, { type: 'array' });
-            
-            let allData = [];
-            let idCounter = 1;
-            
-            workbook.SheetNames.forEach(sheetName => {
-                const worksheet = workbook.Sheets[sheetName];
-                const jsonData = XLSX.utils.sheet_to_json(worksheet);
-                
-                if (jsonData.length > 0) {
-                    const newData = jsonData.map(row => ({
-                        id: idCounter++,
-                        ...row
-                    }));
-                    allData = [...allData, ...newData];
-                }
-            });
-            
-            if (allData.length > 0) {
-                assetsData = allData;
-                refreshAvailableColumns();
-                initVisibleColumns();
-                filteredData = [...assetsData];
-                populateFilters();
-                updateUI();
-                saveToLocalStorage();
-                showAlert(`تم تحميل ${allData.length} سجل من OneDrive`, 'success');
-            } else {
-                showAlert('الملف فارغ أو لا يحتوي على بيانات', 'error');
-            }
-        }
-
-        async function syncToOneDrive() {
-            if (!oneDriveConfig.fileId) {
-                showAlert('لا يوجد ملف متصل', 'error');
-                throw new Error('لا يوجد ملف متصل');
-            }
-            
-            showAlert('جاري رفع التغييرات إلى OneDrive...', 'info');
-            
-            if (!oneDriveAccessToken) {
-                const token = await acquireTokenSilent();
-                if (!token) {
-                    showAlert('يرجى تسجيل الدخول أولاً', 'error');
-                    throw new Error('يرجى تسجيل الدخول أولاً');
-                }
-            }
-            
-            // Create Excel workbook from current data
-            const dataToExport = assetsData.map(asset => {
-                const row = { ...asset };
-                delete row.id;
-                return row;
-            });
-            
-            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, 'Assets');
-            const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-            
-            // Upload to OneDrive (replace existing file)
-            const uploadUrl = `https://graph.microsoft.com/v1.0/me/drive/items/${oneDriveConfig.fileId}/content`;
-            
-            async function attemptUpload(token, retryCount = 0) {
-                const response = await fetch(uploadUrl, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                    },
-                    body: wbout
-                });
-                
-                if (response.status === 423) {
-                    // File is locked (open in Excel Online or desktop)
-                    if (retryCount < 3) {
-                        const waitSec = (retryCount + 1) * 5;
-                        showAlert(`الملف مفتوح حالياً في تطبيق آخر. إعادة المحاولة بعد ${waitSec} ثوانٍ... (${retryCount + 1}/3)`, 'info');
-                        await new Promise(resolve => setTimeout(resolve, waitSec * 1000));
-                        return attemptUpload(token, retryCount + 1);
-                    }
-                    throw new Error('الملف مقفل - يرجى إغلاق الملف من Excel أو Excel Online ثم المحاولة مرة أخرى');
-                }
-                
-                if (response.status === 401) {
-                    const newToken = await acquireTokenSilent();
-                    if (!newToken) {
-                        throw new Error('انتهت الجلسة، يرجى تسجيل الدخول مرة أخرى');
-                    }
-                    return attemptUpload(newToken, retryCount);
-                }
-                
-                if (!response.ok) {
-                    throw new Error('فشل رفع الملف: ' + response.status);
-                }
-                
-                return response;
-            }
-            
-            await attemptUpload(oneDriveAccessToken);
-            
-            oneDriveConfig.lastSync = new Date().toISOString();
-            saveOneDriveConfigToStorage();
-            showOneDriveConnectedFile();
-            
-            sourceFile.lastSync = new Date();
-            saveSourceFileInfo();
-            updateFileStatus();
-            
-            showAlert('تم رفع التغييرات إلى OneDrive بنجاح', 'success');
-        }
-
-        function disconnectOneDrive() {
-            oneDriveConfig.fileId = null;
-            oneDriveConfig.fileName = null;
-            oneDriveConfig.driveId = null;
-            oneDriveConfig.lastSync = null;
-            saveOneDriveConfigToStorage();
-            
-            stopOneDriveAutoSync();
-            
-            if (sourceFile.type === 'onedrive') {
-                sourceFile.type = null;
-                sourceFile.name = null;
-                sourceFile.connectionType = null;
-                saveSourceFileInfo();
-                updateFileStatus();
-            }
-            
-            oneDriveFolderStack = [];
-            updateOneDriveUI();
-            showAlert('تم قطع الاتصال بملف OneDrive', 'info');
-        }
-
-        function startOneDriveAutoSync() {
-            stopOneDriveAutoSync();
-            oneDriveAutoSyncInterval = setInterval(() => {
-                if (oneDriveConfig.fileId && oneDriveAccessToken) {
-                    console.log('OneDrive auto-sync triggered');
-                    syncToOneDrive().catch(e => {
-                        console.error('فشل المزامنة التلقائية:', e);
-                        showAlert('فشل المزامنة التلقائية: ' + e.message, 'error');
-                    });
-                }
-            }, 300000); // 5 minutes
-        }
-
-        function stopOneDriveAutoSync() {
-            if (oneDriveAutoSyncInterval) {
-                clearInterval(oneDriveAutoSyncInterval);
-                oneDriveAutoSyncInterval = null;
-            }
-        }
-
-        function toggleOneDriveAutoSync() {
-            const checkbox = document.getElementById('oneDriveAutoSync');
-            oneDriveConfig.autoSync = checkbox?.checked || false;
-            saveOneDriveConfigToStorage();
-            
-            if (oneDriveConfig.autoSync && oneDriveConfig.fileId) {
-                startOneDriveAutoSync();
-                showAlert('تم تفعيل المزامنة التلقائية', 'success');
-            } else {
-                stopOneDriveAutoSync();
-                showAlert('تم إيقاف المزامنة التلقائية', 'info');
-            }
-        }
-
-        // Tab switching for Online Sheet modal
-        function switchOnlineTab(tab) {
-            const oneDriveTab = document.getElementById('oneDriveTabContent');
-            const googleTab = document.getElementById('googleSheetsTabContent');
-            const tabOneDrive = document.getElementById('tabOneDrive');
-            const tabGoogle = document.getElementById('tabGoogleSheets');
-            
-            if (tab === 'onedrive') {
-                if (oneDriveTab) oneDriveTab.style.display = 'block';
-                if (googleTab) googleTab.style.display = 'none';
-                if (tabOneDrive) {
-                    tabOneDrive.style.background = 'linear-gradient(135deg, #0078d4, #106ebe)';
-                    tabOneDrive.style.color = 'white';
-                }
-                if (tabGoogle) {
-                    tabGoogle.style.background = '#f0f0f0';
-                    tabGoogle.style.color = '#666';
-                }
-            } else {
-                if (oneDriveTab) oneDriveTab.style.display = 'none';
-                if (googleTab) googleTab.style.display = 'block';
-                if (tabOneDrive) {
-                    tabOneDrive.style.background = '#f0f0f0';
-                    tabOneDrive.style.color = '#666';
-                }
-                if (tabGoogle) {
-                    tabGoogle.style.background = 'linear-gradient(135deg, #34a853, #188038)';
-                    tabGoogle.style.color = 'white';
-                }
-            }
-        }
-
-        // ==================== إدارة الملفات الأونلاين ====================
-        function showOnlineSheetModal() {
-            loadOneDriveConfig();
-            displayConnectedSheets();
-            const modal = document.getElementById('onlineSheetModal');
-            if (modal) modal.classList.add('active');
-        }
-
-        function closeOnlineSheetModal() {
-            const modal = document.getElementById('onlineSheetModal');
-            if (modal) modal.classList.remove('active');
-            
-            const googleSheetUrl = document.getElementById('googleSheetUrl');
-            const sheetName = document.getElementById('sheetName');
-            
-            if (googleSheetUrl) googleSheetUrl.value = '';
-            if (sheetName) sheetName.value = '';
-        }
-
-        function displayConnectedSheets() {
-            const container = document.getElementById('connectedSheets');
-            if (!container) return;
-            
-            if (onlineSheets.length === 0) {
-                container.innerHTML = '<p style="color: #999;">لا توجد ملفات متصلة</p>';
-                return;
-            }
-
-            container.innerHTML = onlineSheets.map((sheet, idx) => `
-                <div style="padding: 10px; background: #f8faff; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <strong>${sheet.name}</strong><br>
-                        <small style="color: #666;">آخر مزامنة: ${sheet.lastSync ? new Date(sheet.lastSync).toLocaleString('ar-EG') : 'لم يتم'}</small>
-                    </div>
-                    <button onclick="disconnectSheet(${idx})" style="padding: 5px 10px; background: #ef4444; color: white; border: none; border-radius: 5px; cursor: pointer;">
-                        قطع الاتصال
-                    </button>
-                </div>
-            `).join('');
-        }
-
-        function connectOnlineSheet() {
-            const url = document.getElementById('googleSheetUrl')?.value.trim();
-            const name = document.getElementById('sheetName')?.value.trim();
-            const autoSync = document.getElementById('autoSync')?.checked;
-
-            if (!url || !name) {
-                showAlert('يرجى ملء جميع الحقول', 'error');
-                return;
-            }
-
-            sourceFile.type = 'online';
-            sourceFile.name = name;
-            sourceFile.url = url;
-            sourceFile.lastSync = null;
-
-            importFromOnlineSheet(url).then(() => {
-                onlineSheets.push({ name, url, lastSync: new Date() });
-                saveSourceFileInfo();
-                updateFileStatus();
-                closeOnlineSheetModal();
-                displayConnectedSheets();
-                showAlert(`تم ربط الملف "${name}" بنجاح`, 'success');
-                
-                if (autoSync) {
-                    setInterval(() => {
-                        importFromOnlineSheet(url).catch(e => console.error('فشل المزامنة التلقائية:', e));
-                    }, 300000);
-                }
-            }).catch(error => {
-                showAlert('فشل الاتصال بالملف: ' + error.message, 'error');
-            });
-        }
-
-        function disconnectSheet(index) {
-            if (onlineSheets[index] && onlineSheets[index].syncInterval) {
-                clearInterval(onlineSheets[index].syncInterval);
-            }
-            onlineSheets.splice(index, 1);
-            displayConnectedSheets();
-            saveToLocalStorage();
-            showAlert('تم قطع الاتصال بنجاح', 'success');
-        }
-
-        async function syncOnlineSheet(index) {
-            const sheet = onlineSheets[index];
-            showAlert(`جاري مزامنة ${sheet.name}...`, 'info');
-
-            let csvUrl = sheet.url;
-            if (csvUrl.includes('/edit')) {
-                csvUrl = csvUrl.split('/edit')[0] + '/export?format=csv';
-            } else if (!csvUrl.includes('format=csv')) {
-                csvUrl += (csvUrl.includes('?') ? '&' : '?') + 'format=csv';
-            }
-
-            try {
-                const response = await fetch(csvUrl);
-                if (!response.ok) throw new Error('فشل تحميل الملف');
-                const text = await response.text();
-
-                const rows = text.trim().split(/\r?\n/).map(r => r.split(','));
-                const headers = rows.shift();
-                const newData = rows.map((row, idx) => {
-                    const obj = { id: assetsData.length + idx + 1 };
-                    headers.forEach((header, hIdx) => {
-                        let value = row[hIdx] ? row[hIdx].trim() : '';
-                        if (value.startsWith('"') && value.endsWith('"')) {
-                            value = value.substring(1, value.length - 1);
-                        }
-                        obj[header.trim()] = value;
-                    });
-                    return obj;
-                });
-
-                if (newData.length) {
-                    assetsData = [...assetsData, ...newData];
-                    refreshAvailableColumns();
-                    initVisibleColumns();
-                    filteredData = [...assetsData];
-                    populateFilters();
-                    updateUI();
-
-                    sheet.lastSync = new Date();
-                    saveToLocalStorage();
-                    showAlert(`تمت المزامنة (${newData.length} سجل)`,'success');
-                } else {
-                    showAlert('لم يتم العثور على بيانات في الملف المُزامن', 'error');
-                }
-            } catch (err) {
-                console.error(err);
-                showAlert('فشل في المزامنة، تحقق من الرابط', 'error');
-            }
-
-            displayConnectedSheets();
-        }
-
-        // ==================== تبديل اللغة ====================
-
-        document.querySelectorAll('.lang-option').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.lang-option').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                switchLanguage(this.dataset.lang);
-                currentFilters.lang = currentLang;
-                saveAppState();
-            });
-        });
-
-        // ==================== بدء التطبيق ====================
-        initializeData();
-        updateLastUpdate();
         
-        // Initialize OneDrive on page load
-        loadOneDriveConfig();
+        // Delete Row
+        function deleteRow(index) {
+            if (confirm('هل تريد حذف هذا الصف؟')) {
+                allData.splice(index, 1);
+                filteredData = allData;
+                currentPage = 1;
+                renderTable();
+                showAlert('تم حذف الصف بنجاح', 'success');
+            }
+        }
         
-        window.addEventListener('beforeunload', function() {
-            saveToLocalStorage();
+        // Edit Row
+        function editRow(btn, index) {
+            alert('سيتم تفعيل خاصية التعديل قريباً');
+        }
+        
+        // Placeholder functions
+        function showAddModal() {
+            alert('سيتم تفعيل إضافة أصل جديد قريباً');
+        }
+        
+        function exportToExcel() {
+            if (allData.length === 0) {
+                showAlert('لا توجد بيانات للتصدير', 'error');
+                return;
+            }
+            
+            const ws = XLSX.utils.json_to_sheet(allData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Assets');
+            XLSX.writeFile(wb, 'assets.xlsx');
+            showAlert('تم التصدير بنجاح', 'success');
+        }
+        
+        function printTable() {
+            window.print();
+        }
+        
+        // Initialize
+        window.addEventListener('DOMContentLoaded', () => {
+            initializeLanguage();
+            updateLanguage();
         });
     </script>
 </body>
