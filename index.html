@@ -234,26 +234,6 @@
             box-shadow: 0 5px 15px rgba(55,65,81,0.3);
         }
         
-        .column-filters-btn {
-            background: linear-gradient(135deg, #06b6d4, #0891b2);
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 12px;
-            font-size: 1em;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s;
-        }
-        
-        .column-filters-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(6,182,212,0.3);
-        }
-        
         .filters-bar {
             background: white;
             border-radius: 20px;
@@ -264,6 +244,10 @@
             gap: 20px;
             flex-wrap: wrap;
             align-items: center;
+        }
+        
+        .filters-bar.hidden {
+            display: none;
         }
         
         .filter-group {
@@ -964,60 +948,6 @@
             text-align: left;
         }
         
-        /* Column Filters Modal Styles */
-        .column-filters-content {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            max-height: 400px;
-            overflow-y: auto;
-            padding: 20px 0;
-        }
-        
-        .column-filter-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px;
-            background: #f8faff;
-            border-radius: 10px;
-            transition: all 0.3s;
-        }
-        
-        .column-filter-item:hover {
-            background: #e8efff;
-        }
-        
-        .column-filter-item input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
-        }
-        
-        .column-filter-item label {
-            cursor: pointer;
-            flex: 1;
-            margin: 0;
-            font-weight: 500;
-            color: #333;
-        }
-        
-        .select-all-filters {
-            grid-column: 1 / -1;
-            padding: 12px;
-            background: #1e3c72;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .select-all-filters:hover {
-            background: #0f1f47;
-        }
-        
         @media (max-width: 768px) {
             .kpi-grid {
                 grid-template-columns: repeat(2, 1fr);
@@ -1037,10 +967,6 @@
             
             .data-table td {
                 max-width: 200px;
-            }
-            
-            .column-filters-content {
-                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -1090,28 +1016,10 @@
                 <i class="fas fa-print"></i>
                 <span id="printBtnText">طباعة</span>
             </button>
-
-            <button class="column-filters-btn" onclick="showColumnFiltersModal()">
-                <i class="fas fa-filter"></i>
-                <span id="columnFiltersBtnText">إدارة الأعمدة</span>
-            </button>
         </div>
 
-        <div class="filters-bar">
-            <div class="filter-group">
-                <label class="filter-label">
-                    <i class="fas fa-search"></i>
-                    <span id="searchLabelText">بحث</span>
-                </label>
-                <input type="text" id="searchInput" class="search-input" placeholder="بحث عام..." onkeyup="filterData()">
-            </div>
-            <button class="clear-filters" onclick="clearAllFilters()">
-                <i class="fas fa-times"></i>
-                <span id="clearFiltersBtnText">مسح الفلاتر</span>
-            </button>
-        </div>
-
-        <div id="dynamicFiltersContainer" class="filters-bar" style="display: none;"></div>
+        <!-- شريط الفلاتر الديناميكية -->
+        <div class="filters-bar hidden" id="dynamicFiltersBar"></div>
 
         <div class="data-table-container">
             <div class="table-header">
@@ -1125,7 +1033,6 @@
                     <tbody id="tableBody"></tbody>
                 </table>
             </div>
-            <div class="pagination" id="pagination"></div>
         </div>
 
         <div class="footer" id="footer">
@@ -1133,108 +1040,14 @@
         </div>
     </div>
 
-    <!-- Column Filters Modal -->
-    <div id="columnFiltersModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="columnFiltersTitle">إدارة الأعمدة</h2>
-                <button class="modal-close" onclick="closeColumnFiltersModal()">✕</button>
-            </div>
-            <button class="select-all-filters" onclick="toggleAllColumns()">
-                <span id="selectAllColumnsText">تحديد الكل</span>
-            </button>
-            <div class="column-filters-content" id="columnFiltersContent"></div>
-            <div class="modal-footer">
-                <button class="btn-secondary" onclick="closeColumnFiltersModal()">
-                    <span id="closeColumnFiltersText">إغلاق</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
     <script>
-        // Data storage
+        // البيانات والمتغيرات
         let allData = [];
         let filteredData = [];
-        let currentPage = 1;
-        let rowsPerPage = 10;
-        let visibleColumns = {};
+        let dynamicColumns = [];
+        let activeFilters = {};
         
-        // Language constants
-        const labels = {
-            ar: {
-                mainTitle: 'نظام إدارة الأصول الشامل',
-                subTitle: 'Samcrete Egypt - إدارة ومتابعة الأصول',
-                uploadBtnText: 'تحميل ملف Excel',
-                addBtnText: 'إضافة أصل جديد',
-                exportBtnText: 'تصدير Excel',
-                printBtnText: 'طباعة',
-                columnFiltersBtnText: 'إدارة الأعمدة',
-                searchLabelText: 'بحث',
-                clearFiltersBtnText: 'مسح الفلاتر',
-                tableTitle: 'البيانات',
-                columnFiltersTitle: 'إدارة الأعمدة',
-                selectAllColumnsText: 'تحديد الكل',
-                closeColumnFiltersText: 'إغلاق'
-            },
-            en: {
-                mainTitle: 'Asset Management System',
-                subTitle: 'Samcrete Egypt - Asset Management',
-                uploadBtnText: 'Upload Excel File',
-                addBtnText: 'Add New Asset',
-                exportBtnText: 'Export Excel',
-                printBtnText: 'Print',
-                columnFiltersBtnText: 'Manage Columns',
-                searchLabelText: 'Search',
-                clearFiltersBtnText: 'Clear Filters',
-                tableTitle: 'Data',
-                columnFiltersTitle: 'Manage Columns',
-                selectAllColumnsText: 'Select All',
-                closeColumnFiltersText: 'Close'
-            }
-        };
-        
-        let currentLang = 'ar';
-        
-        // Initialize language
-        function initializeLanguage() {
-            document.querySelectorAll('[data-lang]').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    currentLang = this.getAttribute('data-lang');
-                    updateLanguage();
-                    localStorage.setItem('selectedLanguage', currentLang);
-                });
-            });
-            
-            const savedLang = localStorage.getItem('selectedLanguage');
-            if (savedLang) {
-                currentLang = savedLang;
-                document.querySelectorAll('[data-lang]').forEach(btn => {
-                    btn.classList.remove('active');
-                });
-                document.querySelector(`[data-lang="${currentLang}"]`).classList.add('active');
-            }
-        }
-        
-        function updateLanguage() {
-            const lang = labels[currentLang];
-            document.getElementById('mainTitle').textContent = lang.mainTitle;
-            document.getElementById('uploadBtnText').textContent = lang.uploadBtnText;
-            document.getElementById('addBtnText').textContent = lang.addBtnText;
-            document.getElementById('exportBtnText').textContent = lang.exportBtnText;
-            document.getElementById('printBtnText').textContent = lang.printBtnText;
-            document.getElementById('columnFiltersBtnText').textContent = lang.columnFiltersBtnText;
-            document.getElementById('searchLabelText').textContent = lang.searchLabelText;
-            document.getElementById('clearFiltersBtnText').textContent = lang.clearFiltersBtnText;
-            document.getElementById('tableTitle').textContent = lang.tableTitle;
-            
-            document.querySelectorAll('[data-lang]').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            document.querySelector(`[data-lang="${currentLang}"]`).classList.add('active');
-        }
-        
-        // Handle File Upload
+        // تحميل الملف
         function handleFileUpload(input) {
             const file = input.files[0];
             if (!file) return;
@@ -1246,19 +1059,18 @@
                     const ws = wb.Sheets[wb.SheetNames[0]];
                     const data = XLSX.utils.sheet_to_json(ws);
                     
-                    allData = data;
-                    filteredData = data;
-                    currentPage = 1;
-                    
-                    // Initialize visible columns
                     if (data.length > 0) {
-                        Object.keys(data[0]).forEach(col => {
-                            visibleColumns[col] = true;
-                        });
+                        allData = data;
+                        filteredData = data;
+                        dynamicColumns = Object.keys(data[0]);
+                        activeFilters = {};
+                        
+                        renderDynamicFilters();
+                        renderTable();
+                        showAlert('تم تحميل الملف بنجاح! عدد الصفوف: ' + data.length, 'success');
+                    } else {
+                        showAlert('الملف فارغ!', 'error');
                     }
-                    
-                    renderTable();
-                    showAlert('تم تحميل الملف بنجاح', 'success');
                 } catch (error) {
                     showAlert('خطأ في قراءة الملف', 'error');
                     console.error(error);
@@ -1266,192 +1078,152 @@
             };
             reader.readAsArrayBuffer(file);
         }
-        
-        // Render Table
-        function renderTable() {
-            const tableHeader = document.getElementById('tableHeader');
-            const tableBody = document.getElementById('tableBody');
+
+        // رسم الفلاتر الديناميكية
+        function renderDynamicFilters() {
+            const filtersBar = document.getElementById('dynamicFiltersBar');
+            filtersBar.innerHTML = '';
             
-            tableHeader.innerHTML = '';
-            tableBody.innerHTML = '';
-            
-            if (allData.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding: 20px;">لا توجد بيانات</td></tr>';
+            if (dynamicColumns.length === 0) {
+                filtersBar.classList.add('hidden');
                 return;
             }
             
-            // Get all column names
-            const allColumns = Object.keys(allData[0]);
-            
-            // Create headers for visible columns
-            allColumns.forEach(col => {
-                if (visibleColumns[col]) {
-                    const th = document.createElement('th');
-                    th.textContent = col;
-                    tableHeader.appendChild(th);
+            filtersBar.classList.remove('hidden');
+
+            // إنشاء فلتر لكل عمود
+            dynamicColumns.forEach(columnName => {
+                const filterGroup = document.createElement('div');
+                filterGroup.className = 'filter-group';
+
+                const label = document.createElement('label');
+                label.className = 'filter-label';
+                label.innerHTML = `
+                    <i class="fas fa-filter"></i>
+                    <span>${columnName}</span>
+                `;
+
+                const select = document.createElement('select');
+                select.className = 'filter-select';
+                select.dataset.column = columnName;
+                select.onchange = applyDynamicFilters;
+
+                // خيار "الكل"
+                const allOption = document.createElement('option');
+                allOption.value = '';
+                allOption.textContent = 'الكل';
+                select.appendChild(allOption);
+
+                // الحصول على القيم الفريدة وترتيبها
+                const uniqueValues = [...new Set(
+                    allData.map(row => String(row[columnName] || ''))
+                )].filter(v => v).sort();
+
+                uniqueValues.forEach(value => {
+                    const option = document.createElement('option');
+                    option.value = value;
+                    option.textContent = value;
+                    select.appendChild(option);
+                });
+
+                filterGroup.appendChild(label);
+                filterGroup.appendChild(select);
+                filtersBar.appendChild(filterGroup);
+            });
+
+            // زر مسح الفلاتر
+            const clearBtn = document.createElement('button');
+            clearBtn.className = 'clear-filters';
+            clearBtn.innerHTML = '<i class="fas fa-times"></i> <span>مسح الفلاتر</span>';
+            clearBtn.onclick = clearAllDynamicFilters;
+            filtersBar.appendChild(clearBtn);
+        }
+
+        // تطبيق الفلاتر الديناميكية
+        function applyDynamicFilters() {
+            activeFilters = {};
+            document.querySelectorAll('#dynamicFiltersBar .filter-select').forEach(select => {
+                if (select.value) {
+                    activeFilters[select.dataset.column] = select.value;
                 }
             });
-            
-            // Add action column header
-            const actionTh = document.createElement('th');
-            actionTh.textContent = 'الإجراءات';
-            tableHeader.appendChild(actionTh);
-            
-            // Calculate pagination
-            const start = (currentPage - 1) * rowsPerPage;
-            const end = start + rowsPerPage;
-            const pageData = filteredData.slice(start, end);
-            
-            // Render rows
-            pageData.forEach((row, index) => {
-                const tr = document.createElement('tr');
-                
-                allColumns.forEach(col => {
-                    if (visibleColumns[col]) {
-                        const td = document.createElement('td');
-                        td.textContent = row[col] || '';
-                        tr.appendChild(td);
+
+            // تصفية البيانات
+            filteredData = allData.filter(row => {
+                for (const [column, filterValue] of Object.entries(activeFilters)) {
+                    if (String(row[column] || '') !== filterValue) {
+                        return false;
                     }
+                }
+                return true;
+            });
+
+            renderTable();
+        }
+
+        // مسح الفلاتر
+        function clearAllDynamicFilters() {
+            document.querySelectorAll('#dynamicFiltersBar .filter-select').forEach(select => {
+                select.value = '';
+            });
+            activeFilters = {};
+            filteredData = allData;
+            renderTable();
+        }
+
+        // رسم الجدول
+        function renderTable() {
+            const tableHeader = document.getElementById('tableHeader');
+            const tableBody = document.getElementById('tableBody');
+
+            tableHeader.innerHTML = '';
+            tableBody.innerHTML = '';
+
+            if (!dynamicColumns || dynamicColumns.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding: 20px;">لا توجد بيانات</td></tr>';
+                return;
+            }
+
+            // رسم رؤوس الجدول
+            dynamicColumns.forEach(columnName => {
+                const th = document.createElement('th');
+                th.textContent = columnName;
+                tableHeader.appendChild(th);
+            });
+
+            // رسم صفوف البيانات
+            if (filteredData.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="' + dynamicColumns.length + '" style="text-align:center; padding: 20px;">لا توجد نتائج</td></tr>';
+                return;
+            }
+
+            filteredData.forEach(row => {
+                const tr = document.createElement('tr');
+                dynamicColumns.forEach(columnName => {
+                    const td = document.createElement('td');
+                    td.textContent = row[columnName] || '';
+                    tr.appendChild(td);
                 });
-                
-                // Add action buttons
-                const actionTd = document.createElement('td');
-                actionTd.className = 'action-buttons';
-                actionTd.innerHTML = `
-                    <button class="btn-edit" onclick="editRow(this, ${start + index})">تعديل</button>
-                    <button class="btn-delete" onclick="deleteRow(${start + index})">حذف</button>
-                `;
-                tr.appendChild(actionTd);
-                
                 tableBody.appendChild(tr);
             });
-            
-            renderPagination();
         }
-        
-        // Filter Data
-        function filterData() {
-            const searchValue = document.getElementById('searchInput').value.toLowerCase();
-            
-            filteredData = allData.filter(row => {
-                return Object.values(row).some(value => 
-                    String(value).toLowerCase().includes(searchValue)
-                );
-            });
-            
-            currentPage = 1;
-            renderTable();
-        }
-        
-        // Clear Filters
-        function clearAllFilters() {
-            document.getElementById('searchInput').value = '';
-            filteredData = allData;
-            currentPage = 1;
-            renderTable();
-        }
-        
-        // Render Pagination
-        function renderPagination() {
-            const totalPages = Math.ceil(filteredData.length / rowsPerPage);
-            const paginationDiv = document.getElementById('pagination');
-            paginationDiv.innerHTML = '';
-            
-            for (let i = 1; i <= totalPages; i++) {
-                const btn = document.createElement('button');
-                btn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
-                btn.textContent = i;
-                btn.onclick = () => {
-                    currentPage = i;
-                    renderTable();
-                };
-                paginationDiv.appendChild(btn);
-            }
-        }
-        
-        // Column Filters Modal
-        function showColumnFiltersModal() {
-            const modal = document.getElementById('columnFiltersModal');
-            const content = document.getElementById('columnFiltersContent');
-            content.innerHTML = '';
-            
-            const columns = Object.keys(allData[0] || {});
-            
-            columns.forEach(col => {
-                const div = document.createElement('div');
-                div.className = 'column-filter-item';
-                
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.id = `col-${col}`;
-                checkbox.checked = visibleColumns[col];
-                checkbox.onchange = () => {
-                    visibleColumns[col] = checkbox.checked;
-                    renderTable();
-                };
-                
-                const label = document.createElement('label');
-                label.htmlFor = `col-${col}`;
-                label.textContent = col;
-                
-                div.appendChild(checkbox);
-                div.appendChild(label);
-                content.appendChild(div);
-            });
-            
-            modal.classList.add('active');
-        }
-        
-        function closeColumnFiltersModal() {
-            document.getElementById('columnFiltersModal').classList.remove('active');
-        }
-        
-        function toggleAllColumns() {
-            const checkboxes = document.querySelectorAll('.column-filter-item input[type="checkbox"]');
-            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-            
-            checkboxes.forEach(checkbox => {
-                checkbox.checked = !allChecked;
-                const col = checkbox.id.replace('col-', '');
-                visibleColumns[col] = !allChecked;
-            });
-            
-            renderTable();
-        }
-        
-        // Show Alert
+
+        // دوال مساعدة
         function showAlert(message, type) {
-            const alert = document.createElement('div');
-            alert.className = `alert alert-${type}`;
-            alert.textContent = message;
-            document.body.appendChild(alert);
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-' + type;
+            alertDiv.textContent = message;
+            document.body.appendChild(alertDiv);
             
             setTimeout(() => {
-                alert.remove();
+                alertDiv.remove();
             }, 3000);
         }
-        
-        // Delete Row
-        function deleteRow(index) {
-            if (confirm('هل تريد حذف هذا الصف؟')) {
-                allData.splice(index, 1);
-                filteredData = allData;
-                currentPage = 1;
-                renderTable();
-                showAlert('تم حذف الصف بنجاح', 'success');
-            }
-        }
-        
-        // Edit Row
-        function editRow(btn, index) {
-            alert('سيتم تفعيل خاصية التعديل قريباً');
-        }
-        
-        // Placeholder functions
+
         function showAddModal() {
-            alert('سيتم تفعيل إضافة أصل جديد قريباً');
+            showAlert('سيتم تفعيل إضافة أصل جديد قريباً', 'info');
         }
-        
+
         function exportToExcel() {
             if (allData.length === 0) {
                 showAlert('لا توجد بيانات للتصدير', 'error');
@@ -1464,15 +1236,18 @@
             XLSX.writeFile(wb, 'assets.xlsx');
             showAlert('تم التصدير بنجاح', 'success');
         }
-        
+
         function printTable() {
             window.print();
         }
-        
-        // Initialize
+
+        // التهيئة
         window.addEventListener('DOMContentLoaded', () => {
-            initializeLanguage();
-            updateLanguage();
+            document.querySelectorAll('[data-lang]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    console.log('Language changed to:', this.getAttribute('data-lang'));
+                });
+            });
         });
     </script>
 </body>
