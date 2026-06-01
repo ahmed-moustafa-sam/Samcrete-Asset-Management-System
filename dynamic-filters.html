@@ -1,0 +1,148 @@
+<!-- شريط الفلاتر الديناميكية - سيتم ملؤه ديناميكياً بعد تحميل الملف -->
+<div class="filters-bar" id="dynamicFiltersBar" style="display: none;">
+    <!-- الفلاتر ستظهر هنا -->
+</div>
+
+<script>
+    // نظام الفلاتر الديناميكية
+    let allTableData = [];
+    let columnNames = [];
+    let activeFilters = {};
+
+    // دالة تحديث الفلاتر الديناميكية بعد تحميل البيانات
+    function setupDynamicFilters(data, columns) {
+        allTableData = data;
+        columnNames = columns;
+        activeFilters = {};
+        renderDynamicFilters();
+    }
+
+    // رسم الفلاتر الديناميكية
+    function renderDynamicFilters() {
+        const filtersBar = document.getElementById('dynamicFiltersBar');
+        filtersBar.innerHTML = '';
+        filtersBar.style.display = 'flex';
+
+        if (!columnNames || columnNames.length === 0) {
+            filtersBar.style.display = 'none';
+            return;
+        }
+
+        // إنشاء فلتر لكل عمود
+        columnNames.forEach(columnName => {
+            const filterGroup = document.createElement('div');
+            filterGroup.className = 'filter-group';
+
+            const label = document.createElement('label');
+            label.className = 'filter-label';
+            label.innerHTML = `
+                <i class="fas fa-filter"></i>
+                <span>${columnName}</span>
+            `;
+
+            const select = document.createElement('select');
+            select.className = 'filter-select';
+            select.dataset.column = columnName;
+            select.onchange = applyDynamicFilters;
+
+            // خيار "الكل"
+            const allOption = document.createElement('option');
+            allOption.value = '';
+            allOption.textContent = '🔄 الكل';
+            select.appendChild(allOption);
+
+            // الحصول على القيم الفريدة وترتيبها
+            const uniqueValues = [...new Set(
+                allTableData.map(row => String(row[columnName] || ''))
+            )].filter(v => v).sort();
+
+            uniqueValues.forEach(value => {
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = value;
+                select.appendChild(option);
+            });
+
+            filterGroup.appendChild(label);
+            filterGroup.appendChild(select);
+            filtersBar.appendChild(filterGroup);
+        });
+
+        // زر مسح الفلاتر
+        const clearBtn = document.createElement('button');
+        clearBtn.className = 'clear-filters';
+        clearBtn.innerHTML = '<i class="fas fa-times"></i> <span>مسح الفلاتر</span>';
+        clearBtn.onclick = clearAllDynamicFilters;
+        filtersBar.appendChild(clearBtn);
+    }
+
+    // تطبيق الفلاتر الديناميكية
+    function applyDynamicFilters() {
+        activeFilters = {};
+        const selects = document.querySelectorAll('#dynamicFiltersBar .filter-select');
+
+        selects.forEach(select => {
+            if (select.value) {
+                activeFilters[select.dataset.column] = select.value;
+            }
+        });
+
+        // تطبيق الفلاتر على الجدول
+        const tbody = document.getElementById('tableBody');
+        if (!tbody) return;
+
+        const rows = tbody.querySelectorAll('tr');
+        const headers = document.querySelectorAll('#tableHeader th');
+        let columnIndexMap = {};
+
+        // بناء خريطة أسماء الأعمدة إلى الفهارس
+        headers.forEach((th, idx) => {
+            columnIndexMap[th.textContent.trim()] = idx;
+        });
+
+        // إظهار/إخفاء الصفوف بناءً على الفلاتر
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            let shouldShow = true;
+
+            for (const [column, filterValue] of Object.entries(activeFilters)) {
+                const colIndex = columnIndexMap[column];
+                if (colIndex !== undefined && cells[colIndex]) {
+                    const cellValue = cells[colIndex].textContent.trim();
+                    if (cellValue !== filterValue) {
+                        shouldShow = false;
+                        break;
+                    }
+                }
+            }
+
+            row.style.display = shouldShow ? '' : 'none';
+        });
+    }
+
+    // مسح الفلاتر
+    function clearAllDynamicFilters() {
+        document.querySelectorAll('#dynamicFiltersBar .filter-select').forEach(select => {
+            select.value = '';
+        });
+        activeFilters = {};
+        applyDynamicFilters();
+    }
+
+    // تعديل دالة renderTable الأصلية لتفعيل الفلاتر
+    const originalRenderTable = window.renderTable;
+    if (typeof originalRenderTable === 'function') {
+        window.renderTable = function() {
+            originalRenderTable.apply(this, arguments);
+            // بعد رسم الجدول، أعد تطبيق الفلاتر
+            setTimeout(applyDynamicFilters, 100);
+        };
+    }
+
+    // استدعاء setupDynamicFilters بعد تحميل البيانات
+    window.addEventListener('dataLoaded', function(e) {
+        if (e.detail && e.detail.data && e.detail.columns) {
+            setupDynamicFilters(e.detail.data, e.detail.columns);
+        }
+    });
+</script>
