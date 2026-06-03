@@ -2399,9 +2399,16 @@
         function getDeviceIcon(type) {
             const icons = {
                 'LAP TOP': 'fa-laptop',
+                'LAPTOP': 'fa-laptop',
+                'Laptop': 'fa-laptop',
                 'Printer': 'fa-print',
+                'Scanner': 'fa-print',
                 'Screen': 'fa-tv',
+                'Monitor': 'fa-tv',
                 'Desk Top': 'fa-desktop',
+                'DeskTop': 'fa-desktop',
+                'Desktop': 'fa-desktop',
+                'Desk top': 'fa-desktop',
                 'Access Point': 'fa-wifi',
                 'Switch': 'fa-network-wired',
                 'Router': 'fa-network-wired',
@@ -2411,6 +2418,7 @@
                 'External Hard Disk': 'fa-hdd',
                 'Server': 'fa-server',
                 'Application': 'fa-code'
+                
             };
             return icons[type] || 'fa-microchip';
         }
