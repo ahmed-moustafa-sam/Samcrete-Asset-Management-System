@@ -1018,7 +1018,8 @@
                 <span id="printBtnText">Print</span>
             </button>
             
-            <button class="clear-filters" onclick="clearAllData()" style="background: #ef4444; margin-right: auto;">
+            <!-- تم تعديل شكل زر تنظيف البيانات ليكون مثل باقي الأزرار -->
+            <button class="clear-filters" onclick="clearAllData()" style="background: #ef4444; margin-right: auto; display: flex; align-items: center; gap: 8px; padding: 12px 25px; border-radius: 12px; font-size: 1em; font-weight: 600; cursor: pointer; border: none; color: white;">
                 <i class="fas fa-trash"></i>
                 <span id="clearDataBtnText">تنظيف البيانات</span>
             </button>
@@ -1398,6 +1399,81 @@
             sheetName: null, // اسم الشيت للملف الأونلاين
             connectionType: 'sync' // 'readonly' أو 'sync'
         };
+        
+        // ==================== دوال جديدة للتعامل مع التواريخ ====================
+        // دالة للتحقق مما إذا كان العمود يحتوي على تواريخ
+        function isDateColumn(columnName, sampleData) {
+            if (!sampleData || sampleData.length === 0) return false;
+            for (let i = 0; i < Math.min(10, sampleData.length); i++) {
+                const value = sampleData[i][columnName];
+                if (value && typeof value === 'number' && value > 30000 && value < 50000) return true;
+                if (value && typeof value === 'string') {
+                    const date = new Date(value);
+                    if (!isNaN(date.getTime()) && (value.includes('/') || value.includes('-') || value.match(/^\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}/))) return true;
+                }
+            }
+            return false;
+        }
+        
+        // دالة لتحويل قيمة Excel (رقم) إلى تاريخ
+        function parseExcelDate(excelDate) {
+            if (excelDate === undefined || excelDate === null || excelDate === '') return null;
+            if (typeof excelDate === 'number' && excelDate > 0 && excelDate < 100000) {
+                const date = new Date((excelDate - 25569) * 86400000);
+                if (!isNaN(date.getTime())) return date;
+            }
+            const date = new Date(excelDate);
+            if (!isNaN(date.getTime())) return date;
+            return null;
+        }
+        
+        // دالة لتنسيق التاريخ للعرض
+        function formatDateValue(value) {
+            if (!value) return '-';
+            const date = parseExcelDate(value);
+            if (date && !isNaN(date.getTime())) {
+                return date.toLocaleDateString('ar-EG');
+            }
+            return value;
+        }
+        
+        // دالة لتحويل التاريخ إلى رقم Excel للتصدير
+        function toExcelDateNumber(date) {
+            if (!date) return '';
+            const d = new Date(date);
+            if (isNaN(d.getTime())) return date;
+            const excelEpoch = new Date(1899, 11, 30);
+            const diff = d - excelEpoch;
+            return diff / (24 * 60 * 60 * 1000);
+        }
+        
+        // متغير لتخزين العمود المحدد لفلتر التاريخ
+        let pendingDateFilterColumn = null;
+        
+        // دالة لإضافة فلتر نطاق تاريخ
+        function addDateRangeFilter() {
+            const fromDate = document.getElementById('filterDateFrom')?.value;
+            const toDate = document.getElementById('filterDateTo')?.value;
+            
+            if (!fromDate && !toDate) {
+                showAlert('يرجى إدخال نطاق تاريخ على الأقل', 'error');
+                return;
+            }
+            
+            dynamicFilters.push({
+                column: pendingDateFilterColumn,
+                type: 'dateRange',
+                fromDate: fromDate,
+                toDate: toDate,
+                value: `${fromDate || 'بداية'} → ${toDate || 'نهاية'}`
+            });
+            renderDynamicFilters();
+            applyFilter();
+            saveAppState();
+            closeFilterModal();
+            showAlert(`تم إضافة فلتر تاريخ لـ ${getColumnLabel(pendingDateFilterColumn)}`, 'success');
+            pendingDateFilterColumn = null;
+        }
 
         // ==================== طباعة الصفحة ====================
         function printDashboard() {
@@ -2092,8 +2168,9 @@
             }
         }
 
-        // ==================== Dynamic Filters Functions ====================
+        // ==================== Dynamic Filters Functions (تم تحديثها لدعم التاريخ) ====================
         function openFilterModal() {
+            pendingDateFilterColumn = null; // Reset before opening
             const modal = document.getElementById('filterModal');
             const columnSelect = document.getElementById('filterColumnSelect');
             
@@ -2108,6 +2185,7 @@
 
         function closeFilterModal() {
             document.getElementById('filterModal').classList.remove('active');
+            pendingDateFilterColumn = null;
         }
 
         function onFilterColumnChange() {
@@ -2116,6 +2194,29 @@
             
             if (!column) {
                 valueInputDiv.innerHTML = '';
+                return;
+            }
+            
+            // التحقق مما إذا كان العمود يحتوي على تواريخ
+            const isDateCol = isDateColumn(column, assetsData);
+            if (isDateCol) {
+                pendingDateFilterColumn = column;
+                valueInputDiv.innerHTML = `
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <div>
+                            <label style="font-weight: 600;">من تاريخ:</label>
+                            <input type="date" id="filterDateFrom" class="form-input" style="direction: ltr;">
+                        </div>
+                        <div>
+                            <label style="font-weight: 600;">إلى تاريخ:</label>
+                            <input type="date" id="filterDateTo" class="form-input" style="direction: ltr;">
+                        </div>
+                        <button onclick="addDateRangeFilter()" style="margin-top: 8px; background: #1e3c72; color: white; border: none; padding: 8px; border-radius: 8px; cursor: pointer;">إضافة فلتر تاريخ</button>
+                        <div style="font-size: 0.85em; color: #666;">
+                            <i class="fas fa-info-circle"></i> اترك الحقل فارغاً لعدم تطبيق حد
+                        </div>
+                    </div>
+                `;
                 return;
             }
             
@@ -2157,10 +2258,10 @@
             const valueInput = document.getElementById('filterValue');
             let value = '';
             
-            if (valueInput.tagName === 'SELECT') {
+            if (valueInput && valueInput.tagName === 'SELECT') {
                 value = valueInput.options[valueInput.selectedIndex]?.value || '';
-            } else {
-                value = valueInput ? valueInput.value.trim() : '';
+            } else if (valueInput) {
+                value = valueInput.value.trim();
             }
             
             if (!column) {
@@ -2211,13 +2312,19 @@
                 return;
             }
             
-            container.innerHTML = dynamicFilters.map((filter, idx) => `
-                <div class="dynamic-filter-badge">
-                    <span>${getColumnLabel(filter.column)}:</span>
-                    <span class="filter-value">${escapeHtml(filter.value)}</span>
-                    <i class="fas fa-times" onclick="removeDynamicFilter(${idx})" title="إزالة الفلتر"></i>
-                </div>
-            `).join('');
+            container.innerHTML = dynamicFilters.map((filter, idx) => {
+                let displayValue = filter.value;
+                if (filter.type === 'dateRange') {
+                    displayValue = `${filter.fromDate || 'بداية'} → ${filter.toDate || 'نهاية'}`;
+                }
+                return `
+                    <div class="dynamic-filter-badge">
+                        <span>${getColumnLabel(filter.column)}:</span>
+                        <span class="filter-value">${escapeHtml(displayValue)}</span>
+                        <i class="fas fa-times" onclick="removeDynamicFilter(${idx})" title="إزالة الفلتر"></i>
+                    </div>
+                `;
+            }).join('');
         }
 
         function escapeHtml(str) {
@@ -2230,7 +2337,7 @@
             });
         }
 
-        // ==================== Updated applyFilter Function ====================
+        // ==================== Updated applyFilter Function (يدعم فلتر التاريخ) ====================
         function applyFilter() {
             const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
             
@@ -2240,13 +2347,34 @@
             let tempData = [...assetsData];
             
             for (const filter of dynamicFilters) {
-                tempData = tempData.filter(asset => {
-                    let assetValue = asset[filter.column];
-                    if (assetValue === undefined || assetValue === null) assetValue = '';
-                    const filterValue = String(filter.value).toLowerCase();
-                    const assetValueStr = String(assetValue).toLowerCase();
-                    return assetValueStr.includes(filterValue);
-                });
+                if (filter.type === 'dateRange') {
+                    tempData = tempData.filter(asset => {
+                        let assetValue = asset[filter.column];
+                        if (!assetValue) return false;
+                        let assetDate = parseExcelDate(assetValue);
+                        if (!assetDate || isNaN(assetDate.getTime())) return false;
+                        
+                        if (filter.fromDate) {
+                            const fromDateObj = new Date(filter.fromDate);
+                            fromDateObj.setHours(0,0,0,0);
+                            if (assetDate < fromDateObj) return false;
+                        }
+                        if (filter.toDate) {
+                            const toDateObj = new Date(filter.toDate);
+                            toDateObj.setHours(23,59,59,999);
+                            if (assetDate > toDateObj) return false;
+                        }
+                        return true;
+                    });
+                } else {
+                    tempData = tempData.filter(asset => {
+                        let assetValue = asset[filter.column];
+                        if (assetValue === undefined || assetValue === null) assetValue = '';
+                        const filterValue = String(filter.value).toLowerCase();
+                        const assetValueStr = String(assetValue).toLowerCase();
+                        return assetValueStr.includes(filterValue);
+                    });
+                }
             }
             
             if (searchTerm) {
@@ -2459,7 +2587,7 @@
             showAlert(`تم تحديث ${getColumnLabel(columnName)}`, 'success');
         }
 
-        // ==================== تحديث الجدول مع دعم التعديل المباشر ====================
+        // ==================== تحديث الجدول مع دعم التعديل المباشر وعرض التواريخ بشكل صحيح ====================
         function updateTable() {
             const t = translations[currentLang];
             const start = (currentPage - 1) * rowsPerPage;
@@ -2489,6 +2617,15 @@
                         }
 
                         let value = asset[col];
+                        
+                        // معالجة الأعمدة التي تحتوي على تواريخ
+                        const isDateCol = isDateColumn(col, assetsData);
+                        if (isDateCol && value) {
+                            const dateVal = parseExcelDate(value);
+                            if (dateVal && !isNaN(dateVal.getTime())) {
+                                value = formatDateValue(dateVal);
+                            }
+                        }
                         
                         const isBoolean = typeof value === 'boolean' || 
                                          value === 'true' || value === 'false' ||
@@ -2863,7 +3000,7 @@
             });
         });
 
-        // ==================== دوال إدارة البيانات ====================
+        // ==================== دوال إدارة البيانات (تم تحديث دالة exportToExcel لدعم التاريخ) ====================
         function handleFileUpload(input) {
             const file = input.files[0];
             if (!file) return;
@@ -2898,7 +3035,7 @@
                     
                     workbook.SheetNames.forEach(sheetName => {
                         const worksheet = workbook.Sheets[sheetName];
-                        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
                         
                         if (jsonData.length > 0) {
                             const newData = jsonData.map((row) => ({
@@ -3317,9 +3454,23 @@
             }
         }
 
-        // ==================== تصدير إلى Excel ====================
+        // ==================== تصدير إلى Excel (تم تحديثه لدعم التواريخ) ====================
         function exportToExcel() {
-            const worksheet = XLSX.utils.json_to_sheet(filteredData);
+            // تحويل البيانات إلى صيغة مناسبة للتصدير مع معالجة التواريخ
+            const exportData = filteredData.map(asset => {
+                const newObj = { ...asset };
+                for (const col of Object.keys(newObj)) {
+                    if (isDateColumn(col, assetsData) && newObj[col]) {
+                        const dateVal = parseExcelDate(newObj[col]);
+                        if (dateVal && !isNaN(dateVal.getTime())) {
+                            newObj[col] = toExcelDateNumber(dateVal);
+                        }
+                    }
+                }
+                delete newObj.id;
+                return newObj;
+            });
+            const worksheet = XLSX.utils.json_to_sheet(exportData);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, 'Assets');
             XLSX.writeFile(workbook, `samcrete_assets_${new Date().toISOString().slice(0,10)}.xlsx`);
@@ -3583,8 +3734,6 @@
         }
 
         // ==================== OneDrive Integration ====================
-        // (Note: OneDrive integration functions are kept as they were)
-        
         let msalInstance = null;
         let oneDriveAccessToken = null;
         let oneDriveConfig = {
